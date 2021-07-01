@@ -1,7 +1,5 @@
 import random
 
-from Quantum.Topo import to
-
 
 class Node:
     def __init__(self,

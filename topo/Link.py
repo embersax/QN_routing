@@ -32,15 +32,26 @@ class Link:
         else:
             raise RuntimeError('No such node')
 
-    def contains(self, node): return self.node1 == node or self.node2 == node
-    def swappedAt(self, node): return (self.node1 == node and self.swap1) or (self.node2 == node and self.swap2)
-    def swappedAtTheOtherEndOf(self, node): return (self.node1 == node and self.swap2) or (self.node2 == node and self.swap1)
-    def swapped(self): return self.swap1 or self.swap2
-    def notSwapped(self): return not self.swapped(self)
+    def contains(self, node):
+        return self.node1 == node or self.node2 == node
 
+    def swappedAt(self, node):
+        return (self.node1 == node and self.swap1) or (self.node2 == node and self.swap2)
 
-    def hashCode(self): return self.id
-    def equals(self, other): return other is not None and type(other) is Link and other.id == self.id
+    def swappedAtTheOtherEndOf(self, node):
+        return (self.node1 == node and self.swap2) or (self.node2 == node and self.swap1)
+
+    def swapped(self):
+        return self.swap1 or self.swap2
+
+    def notSwapped(self):
+        return not self.swapped(self)
+
+    def hashCode(self):
+        return self.id
+
+    def equals(self, other):
+        return other is not None and type(other) is Link and other.id == self.id
 
     def assignQubitsUtil(self, value):
         if self.assigned == value:
@@ -52,13 +63,12 @@ class Link:
             self.node1.remainingQubits += 1
             self.node2.remainingQubits += 1
         self.assigned = value
-        assert self.node1.remainingQubits >= 0 and self.node1.remainingQubits <= self.node1.nQubits
-        assert self.node1.remainingQubits >= 0 and self.node1.remainingQubits <= self.node1.nQubits
+        assert 0 <= self.node1.remainingQubits <= self.node1.nQubits
+        assert 0 <= self.node1.remainingQubits <= self.node1.nQubits
 
     def assignQubits(self):
         value = True
         self.assignQubitsUtil(value)
-
 
     def tryEntanglement(self):
         p, b = math.exp(-self.topo.alpha * self.l), self.assigned
@@ -70,28 +80,13 @@ class Link:
         self.assignQubitsUtil(value)
         self.entangled = False
 
+    # Need to figure out the string manipulation part
 
-
-	# Need to figure out the string manipulation part
-	
     # def toString(self):	pass
-     
 
     def assignable(self):
         return not self.assigned and self.node1.remainingQubits > 0 and self.node3.remainingQubits > 0
 
-	
-
-
-
-
-
-
-
-
 
 if __name__ == '__main-__':
     print(Link.count)
-
-
-
