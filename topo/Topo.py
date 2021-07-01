@@ -5,6 +5,37 @@ import random
 import sys
 import re
 
+"""This class defines an edge of the graph"""
+
+
+class Edge:
+    def __init__(self, n1, n2):
+        self.p = (n1, n2)
+
+    # Converts the tuple that conforms an edge into a list.
+    def toList(self): return list(self.p)
+
+    # Given a node n, returns the other node in the edge.
+    def otherThan(self, n):
+        if n == self.p[0]:
+            return self.p[1]
+        elif n == self.p[1]:
+            return self.p[0]
+        else:
+            raise RuntimeError("Neither")
+
+    # Returns true if the node n is either n1 or n2.
+    def contains(self, n): return self.p[0] == n or self.p[1] == n
+
+    # The hashcode of the edge is the xor function between the ids of both nodes.
+    def hashCode(self): return self.p[0].id ^ self.p[1].id
+
+    # An exact same edge shares both n1 and n2. Note that the edge is bidirectional.
+    def equals(self, other): return (type(other) is Edge) and (self.p == other.p or reversed(self.p) == other.p)
+
+
+"""This class represents the topology of the Quantum Network"""
+
 
 class Topo:
     def __init__(self, input):
@@ -51,7 +82,7 @@ class Topo:
             assert n1.id < n2.id
             # I'm not sure but maybe as range is not inclusive for the upper limit, it has to be range(1,nm+1),
             # according to Shouqian's code.
-            for i in range(1, nm+1):
+            for i in range(1, nm + 1):
                 link = Link(self, n1, n2, +(n1.loc - n2.loc))
                 self.links.append(link)
                 n1.links.append(link)
