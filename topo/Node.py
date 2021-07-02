@@ -39,7 +39,7 @@ class Node:
         b = random.uniform(0, 1) <= self.topo.q
 
         if b:
-            self.internalLinks.append(link1 |to| link2)
+            self.internalLinks.append((link1, link2))
         return b
     
     # Need to figure out the string manipulation part
