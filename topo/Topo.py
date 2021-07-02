@@ -149,3 +149,80 @@ class Topo:
 
               """
 
+
+    def kHopNeighbors(self, root, k):
+        if k > self.k:  return set(self.nodes)
+
+        registered = [False for _ in self.nodes]
+        stack = []
+        stack.append(root)
+        registered[root.id] = True
+
+        def work():
+            current = stack[-1]
+
+            if len(stack) <= k + 1:
+                unregisteredNeighbors = set(filter(lambda x: x.id not in registered, [Edge(link.node1, link.node2).otherThan(current) for link in current.links]))
+
+                for unregisteredNeighbor in unregisteredNeighbors:
+                    registered[unregisteredNeighbor.id] = True
+                    stack.append(unregisteredNeighbor)
+                    work()
+                    stack.pop()
+        work()
+
+
+        res = []
+        for idx, val in enumerate(registered):
+            if val:
+                res.append(self.nodes[idx])
+            else:
+                res.append(self.sentinal)
+
+        res = set(filter(lambda x: x != self.sentianl, res))
+
+        return res
+
+
+    def kHopNeighborLinks(self, root, k):
+        registered = [False for _ in self.nodes]
+        result = set()
+
+        stack = []
+        stack.append(root)
+        registered[root.id] = True
+
+
+        def work():
+            current = stack[-1]
+            result.union(self.current.links)
+
+            if len(stack) <= k + 1:
+                unregisteredNeighbors = set(filter(lambda x: x.id not in registered, [Edge(link.node1, link.node2).otherThan(current) for link in current.links]))
+
+                for unregisteredNeighbor in unregisteredNeighbors:
+                    registered[unregisteredNeighbor.id] = True
+                    stack.append(unregisteredNeighbor)
+                    work()
+                    stack.pop()
+
+        work()
+
+        return result
+
+    def getEstablishedEntanglements(self, node1, node2):
+        pass
+
+    def isClean(self):
+        areLinksClean, areNodesClean = True, True
+        for link in self.links:
+            areLinksClean = areLinksClean and not link.entangled and not link.assigned and link.notSwapped()
+        for node in self.nodes:
+            areNodesClean = areNodesClean and not node.internalLinks and node.nQubits == node.remainingQubits
+
+        return areLinksClean and areNodesClean
+
+
+    # This also has not been called anywhere
+    def linksBetween(self, node1, node2):
+        return list(filter(lambda link: node2 == link.node1 or node2 == link.node2, [link for link in node1.links]))
