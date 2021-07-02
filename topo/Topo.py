@@ -56,22 +56,6 @@ class Path:
         pass
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 """This class represents the topology of the Quantum Network"""
 
 
@@ -90,7 +74,7 @@ class Topo:
         self.internalLength = 0
 
         lines = list(filter(lambda x: x != "", re.sub("""\s*//.*$""", "", input.splitlines())))
-        n = int(lines.pop(0))
+        self.n = int(lines.pop(0))
         # Why do we have -sys.maxint and not sys.maxint ?
         self.sentinal = Node(self, -1, [-1, -1, -1], sys.maxint)
         self.alpha = float(lines.pop(0))
@@ -98,7 +82,7 @@ class Topo:
         self.k = int(lines.pop(0))
         self.internalLength = math.log(1 / self.q) / self.alpha
 
-        for i in range(n):
+        for i in range(self.n):
             line = lines.pop(0)
             # I think we need it to be float(x)
             tmp = list(map(lambda x: float(x), line.split(" ")))
@@ -131,4 +115,37 @@ class Topo:
         self.distanceDigits = round(math.ceil(math.log10(
             max(list(map(lambda x: x.l, self.links)) +
                 list(map(lambda x: math.abs(x), list(flat_map(lambda x: x.loc, self.nodes))))))))
+
+
+    def getStatistics(self):
+
+        # I don't think we necessarily need to sort each and every one of these lists. Just the min() and the max() will do.
+        # We can remove these once we are trying to optimize. For now, I'm doing exactly how the kotlin one does.
+
+        numLinks = [len(node.links) for node in self.nodes].sort()
+        numNeighbors = [len([link.theOtherEndOf(node) for link in node.links]) for node in self.nodes].sort()
+        linkLengths = [(link.node1.loc - link.node2.loc) for link in self.links].sort()
+        linkSuccPossibilities = [pow(math.e, -self.alpha + linkLength) for linkLength in linkLengths].sort()
+        numQubits = [node.nQubits for node in self.nodes].sort()
+
+        avgLinks = sum(numLinks) / self.n
+        avgNeighbors = sum(numNeighbors) / self.n
+        avgLinkLength = sum(linkLengths) / len(self.links)
+        avglinkSuccP = sum(linkSuccPossibilities) / len(self.links)
+        avgQubits = sum(numQubits) / self.n
+
+
+        # I didn't understand why the .format() is used here. I've rounded them off to the decimal places provided in the parameter
+
+        return f"""
+              
+              Topology:
+              ${self.n} nodes, ${len(self.links)} links         alpha: ${self.alpha}  q: ${self.q}
+              #links     per node                (Max, Avg, Min): ${numLinks[-1]}   	                    ${round(avgLinks, 2)}	    ${numLinks[0]}
+              #qubits    per node                (Max, Avg, Min): ${numQubits[-1]}   	                    ${round(avgQubits, 2)}	    ${numQubits[0]}
+              #neighbors per node                (Max, Avg, Min): ${numNeighbors[-1]}   	                ${round(avgNeighbors, 2)}	${numNeighbors[0]} 
+              length of links       (km)         (Max, Avg, Min): ${round(linkLengths[-1], 2)}	            ${round(avgLinkLength, 2)}	${round(linkLengths[0], 2)} 
+              P(entanglement succeed for a link) (Max, Avg, Min): ${round(linkSuccPossibilities[-1], 2)}	${round(avglinkSuccP, 2)}	${round(linkSuccPossibilities[0], 2)}
+
+              """
 
