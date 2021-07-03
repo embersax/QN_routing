@@ -38,7 +38,6 @@ class Edge:
         return (type(other) is Edge) and (self.p == other.p or reversed(self.p) == other.p)
 
 
-
 class Path:
     """
     A class for all the methods called as Path.<methodname>()
@@ -48,11 +47,11 @@ class Path:
 
     @staticmethod
     def edges(path):
-        return [Edge(node1, node2) for (node1, node2) in zip(path[:len(path)-1], path[1:])]
+        return [Edge(node1, node2) for (node1, node2) in zip(path[:len(path) - 1], path[1:])]
 
     @staticmethod
     def applyCycle():
-    # There isn't any call made to this function. If we see a need for this, it can be implemented then.
+        # There isn't any call made to this function. If we see a need for this, it can be implemented then.
         pass
 
 
@@ -116,14 +115,13 @@ class Topo:
             max(list(map(lambda x: x.l, self.links)) +
                 list(map(lambda x: math.abs(x), list(flat_map(lambda x: x.loc, self.nodes))))))))
 
-
     def getStatistics(self):
 
         # I don't think we necessarily need to sort each and every one of these lists. Just the min() and the max() will do.
         # We can remove these once we are trying to optimize. For now, I'm doing exactly how the kotlin one does.
 
         numLinks = [len(node.links) for node in self.nodes].sort()
-        numNeighbors = [len([link.theOtherEndOf(node) for link in node.links]) for node in self.nodes].sort()
+        numNeighbors = [len([link.otherThan(node) for link in node.links]) for node in self.nodes].sort()
         linkLengths = [(link.node1.loc - link.node2.loc) for link in self.links].sort()
         linkSuccPossibilities = [pow(math.e, -self.alpha + linkLength) for linkLength in linkLengths].sort()
         numQubits = [node.nQubits for node in self.nodes].sort()
@@ -133,7 +131,6 @@ class Topo:
         avgLinkLength = sum(linkLengths) / len(self.links)
         avglinkSuccP = sum(linkSuccPossibilities) / len(self.links)
         avgQubits = sum(numQubits) / self.n
-
 
         # I didn't understand why the .format() is used here. I've rounded them off to the decimal places provided in the parameter
 
@@ -149,7 +146,6 @@ class Topo:
 
               """
 
-
     def kHopNeighbors(self, root, k):
         if k > self.k:  return set(self.nodes)
 
@@ -162,15 +158,17 @@ class Topo:
             current = stack[-1]
 
             if len(stack) <= k + 1:
-                unregisteredNeighbors = set(filter(lambda x: x.id not in registered, [Edge(link.node1, link.node2).otherThan(current) for link in current.links]))
+                unregisteredNeighbors = set(filter(lambda x: x.id not in registered,
+                                                   [Edge(link.node1, link.node2).otherThan(current) for link in
+                                                    current.links]))
 
                 for unregisteredNeighbor in unregisteredNeighbors:
                     registered[unregisteredNeighbor.id] = True
                     stack.append(unregisteredNeighbor)
                     work()
                     stack.pop()
-        work()
 
+        work()
 
         res = []
         for idx, val in enumerate(registered):
@@ -183,7 +181,6 @@ class Topo:
 
         return res
 
-
     def kHopNeighborLinks(self, root, k):
         registered = [False for _ in self.nodes]
         result = set()
@@ -192,13 +189,14 @@ class Topo:
         stack.append(root)
         registered[root.id] = True
 
-
         def work():
             current = stack[-1]
             result.union(self.current.links)
 
             if len(stack) <= k + 1:
-                unregisteredNeighbors = set(filter(lambda x: x.id not in registered, [Edge(link.node1, link.node2).otherThan(current) for link in current.links]))
+                unregisteredNeighbors = set(filter(lambda x: x.id not in registered,
+                                                   [Edge(link.node1, link.node2).otherThan(current) for link in
+                                                    current.links]))
 
                 for unregisteredNeighbor in unregisteredNeighbors:
                     registered[unregisteredNeighbor.id] = True
@@ -211,7 +209,34 @@ class Topo:
         return result
 
     def getEstablishedEntanglements(self, node1, node2):
-        pass
+        stack = []
+        stack.append((None, node1))
+
+        result = []
+
+        while stack:
+            incoming, current = stack.pop()
+
+            if current == node2:
+                path = [node2]
+                inc = incoming
+
+                while inc.node1 != node1 and inc.node2 != node2:
+                    prev = inc.node2 if inc.node1 == path[-1] else inc.node1
+                    inc = [link.otherThan(inc) for link in prev.internalLinks if inc in link]
+                    path.append(prev)
+
+                path.append(node1)
+                result.append(list(reversed(path)))
+                continue
+
+            outgoingLinks = list(filter(lambda link: link.entangled and not link.swappedAt(current), current.links)) if incoming == None else [link.otherThan(incoming) for link in list(filter(lambda internalLink: incoming in internalLink, current.internalLinks))]
+
+            for outgoingLink in outgoingLinks:
+                stack.append([outgoingLink, Edge(outgoingLink.node1, outgoingLink.node2).otherThan(current)])
+
+        return result
+
 
     def isClean(self):
         areLinksClean, areNodesClean = True, True
@@ -221,7 +246,6 @@ class Topo:
             areNodesClean = areNodesClean and not node.internalLinks and node.nQubits == node.remainingQubits
 
         return areLinksClean and areNodesClean
-
 
     # This also has not been called anywhere
     def linksBetween(self, node1, node2):

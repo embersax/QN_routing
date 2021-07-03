@@ -1,6 +1,6 @@
 import random
 
-from Quantum.Topo import to
+import Topo
 
 
 class Node:
@@ -18,7 +18,7 @@ class Node:
         self.links = []
         self.internalLinks = []
 
-        self.neighbors = {neighbor for neighbor in self.links.theOtherEndOf(self)}
+        self.neighbors = {neighbor for neighbor in self.links.otherThan(self)}
         self.remainingQubits = nQubits
 
     def attemptSwapping(self, link1, link2):
@@ -39,7 +39,7 @@ class Node:
         b = random.uniform(0, 1) <= self.topo.q
 
         if b:
-            self.internalLinks.append((link1, link2))
+            self.internalLinks.append(Topo.Edge(link1, link2))
         return b
     
     # Need to figure out the string manipulation part
