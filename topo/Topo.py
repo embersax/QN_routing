@@ -1,9 +1,13 @@
 import math
 from .Node import Node
 from .Link import Link
+from ..utils.CollectionUtils import PriorityQueue
 import random
+import hashlib
 import sys
 import re
+
+hopLimit = 15
 
 """This class defines an edge of the graph"""
 
@@ -11,6 +15,8 @@ import re
 class Edge:
     def __init__(self, n1, n2):
         self.p = (n1, n2)
+        self.n1 = n1
+        self.n2 = n2
 
     # Converts the tuple that conforms an edge into a list.
     def toList(self):
@@ -18,20 +24,20 @@ class Edge:
 
     # Given a node n, returns the other node in the edge.
     def otherThan(self, n):
-        if n == self.p[0]:
-            return self.p[1]
-        elif n == self.p[1]:
-            return self.p[0]
+        if n == self.n1:
+            return self.n2
+        elif n == self.n2:
+            return self.n1
         else:
             raise RuntimeError("Neither")
 
     # Returns true if the node n is either n1 or n2.
     def contains(self, n):
-        return self.p[0] == n or self.p[1] == n
+        return self.n1 == n or self.n2 == n
 
     # The hashcode of the edge is the xor function between the ids of both nodes.
     def hashCode(self):
-        return self.p[0].id ^ self.p[1].id
+        return self.n1.id ^ self.n2.id
 
     # An exact same edge shares both n1 and n2. Note that the edge is bidirectional.
     def equals(self, other):
@@ -39,6 +45,15 @@ class Edge:
 
 
 """This class represents the topology of the Quantum Network"""
+
+
+def priority(n1, n2):
+    if n1.id < n2.id:
+        return -1
+    elif n1.id > n2.id:
+        return 1
+    else:
+        return 0
 
 
 class Topo:
@@ -115,4 +130,125 @@ class Topo:
 
         for node in self.nodes:
             node.internalLinks.clear()
+
+    # This is the implementation of the shortestPath algorithm
+    # We first need to take all edges (in both directions)
+    def shortestPath(self, edges, src, dst, fStateMetric):
+        reversedEdges = [Edge(edge.n1, edge.otherThan(edge.n1)) for edge in edges]
+        allNodes = [edge.toList() for edge in reversedEdges]
+        # I'm having a lot of trouble implementing the neighborsOf part of the code-
+        neighborsOf = {}
+        prevFromSrc = {}
+        D = dict.fromkeys(self.nodes, float('inf'))
+        # Do we need to have a comparator? Can we just use a def
+        q = PriorityQueue()
+        D[src.id] = 0.0
+        q.push(src.nodeTo(self.sentinal), priority(src, self.sentinal))
+        while q:
+            # Not sure about this pop, but I think it is correct based on the comparator
+            (w, prev) = q.pop()
+            if w in prevFromSrc: continue
+            prevFromSrc[w] = prev
+
+            if w == dst:
+                path = []
+                cur = dst
+                while cur != self.sentinal:
+                    path.insert(0, cur)
+                    cur = prevFromSrc[cur]
+                return D[dst.id], path
+
+            for p in neighborsOf[w]:
+                neighbor, weight = p[0], p[1]
+                newDist = D[w.id] + weight
+                oldDist = D[neighbor.id]
+                if oldDist > newDist:
+                    D[neighbor.id] = newDist
+                    q.push(neighbor.nodeTo(w), priority(neighbor, w))
+        # I don't understand this return statement.
+        return float('inf'), []
+
+    # Returns all routes for two nodes
+    def getAllRoutes(self, n1_, n2_):
+        n1, n2 = [min(n1_, n2_), max(n1_, n2_)]
+        linksAndEdges = {}
+        for link in self.links:
+            linksAndEdges[link] = link.node1.nodeTo(link.node2)
+        topoStr = '\n'.join(str(el) for el in set(linksAndEdges))
+        digest = hashlib.sha256()
+        digest.update(bytearray(topoStr))
+        # I'm not sure what to do with the routeStorage part
+        result = []
+        range_ = self.kHopNeighbors(self.nodes[n1], (hopLimit + 1) / 2) + self.kHopNeighbors(self.nodes[n2], (hopLimit + 1) / 2)
+        # If result is empty
+        if not result:
+            # Find all
+            def dfs(l, remainingNeighbors):
+                if l[-1] == n2:
+                    result.append(list(l))
+                elif len(l) > hopLimit:
+                    return
+                else:
+                    filtered = filter(lambda it: it in range_, self.nodes[l[-1]].neighbors)
+                    map_ = {}
+                    for node in filtered:
+                        map_[node] = node.id
+                    for _, v in map_:
+                        if v not in l and remainingNeighbors:
+                            l.append(v)
+                            dfs(l, list(set(remainingNeighbors) - set(self.nodes[v])))
+                            l.pop(len(l)-1)
+            dfs(list(n1), list(set(self.nodes[n2].neighbors) - set(self.nodes[n1])))
+
+            # Sort via Dijkstra
+            # I'm not sure about this part
+            p = {}
+
+            return result
+
+
+    # Returns all routes between two nodes
+    def getAllElementCycles(self):
+        linksAndEdges = {}
+        for link in self.links:
+            linksAndEdges[link] = link.node1.nodeTo(link.node2)
+        topoStr = '\n'.join(str(el) for el in set(linksAndEdges))
+        digest = hashlib.sha256()
+        digest.update(bytearray(topoStr))
+        # I'm not sure what to do with the routeStorage part
+        result = []
+        # If result is empty
+        if not result:
+            resultSet = []
+            for n in self.nodes:
+                # Not sure but maybe it has to be +1 to be inclusive
+                for length in range(3,10+1):
+                    def dfs(l):
+                        tmp = l[-1].neighbors.intersection(l)
+                        if len(l) == length:
+                            if tmp == set(l[l.size - 2], n):
+                                tmp1 = {}
+                                for node in l: tmp1[node] = node.id
+                                l = tmp1
+                                m = l.index(min(l))
+                                resultSet.append(l[m:len(l)] + l[0:m])
+                        elif len(tmp) <= 1:
+                            filtered = filter(lambda it: len(l) == 1 or it != l[len(l)-2], l[-1].neighbors)
+                            for f in filtered:
+                                l.append(f)
+                                dfs(l)
+                                l.pop(len(l) - 1)
+                    dfs(list(n))
+            result.extend(resultSet)
+            self.saveRoutes()
+        # I don't understand this return statement
+        return dict.fromkeys(result, self.nodes)
+
+    
+
+
+
+
+
+
 

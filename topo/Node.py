@@ -1,5 +1,7 @@
 import random
 
+from .Topo import Edge
+
 
 class Node:
     def __init__(self,
@@ -40,6 +42,10 @@ class Node:
             # Why don't we append a tuple with the links?
             self.internalLinks.append((link1, link2))
         return b
+
+    # Function that creates an edge between two nodes
+    def nodeTo(self, n2):
+        return Edge(self.n1, n2)
     
     # Need to figure out the string manipulation part
     
