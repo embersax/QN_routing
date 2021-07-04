@@ -399,12 +399,3 @@ class Topo:
     # This also has not been called anywhere
     def linksBetween(self, node1, node2):
         return list(filter(lambda link: node2 == link.node1 or node2 == link.node2, [link for link in node1.links]))
-
-
-
-
-
-
-
-
-
