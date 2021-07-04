@@ -1,10 +1,7 @@
 import math
 from .Node import Node
 from .Link import Link
-from .Node import Node
-from .Link import Link
 from ..utils.CollectionUtils import PriorityQueue
-import random
 import hashlib
 import sys
 import re
@@ -57,6 +54,7 @@ def priority(n1, n2):
     else:
         return
 
+
 class Path:
     """
     A class for all the methods called as Path.<methodname>()
@@ -72,7 +70,6 @@ class Path:
     def applyCycle():
         # There isn't any call made to this function. If we see a need for this, it can be implemented then.
         pass
-
 
 
 class Topo:
@@ -92,7 +89,7 @@ class Topo:
         lines = list(filter(lambda x: x != "", re.sub("""\s*//.*$""", "", input.splitlines())))
         self.n = int(lines.pop(0))
         # Why do we have -sys.maxint and not sys.maxint ?
-        self.sentinal = Node(self, -1, [-1, -1, -1], sys.maxint)
+        self.sentinal = Node(self, -1, [-1, -1, -1], sys.maxsize)
         self.alpha = float(lines.pop(0))
         self.q = float(lines.pop(0))
         self.k = int(lines.pop(0))
@@ -108,17 +105,17 @@ class Topo:
         self.nodeDigits = round(math.ceil(math.log10(float(len(self.nodes)))))
 
         while len(lines):
-            linkLine=lines.pop(0)
-            tmp=list(map(lambda x: int(x) ,line.split(" ")))
-            tmp1=tmp[0:2]
-            tmp2=list(map(lambda x: self.nodes[x],tmp1))
-            n1,n2=sorted(tmp2, key=lambda x: x.id, reverse=True)
-            nm=tmp1[2]
+            linkLine = lines.pop(0)
+            tmp = list(map(lambda x: int(x), linkLine.split(" ")))
+            tmp1 = tmp[0:2]
+            tmp2 = list(map(lambda x: self.nodes[x], tmp1))
+            n1, n2 = sorted(tmp2, key=lambda x: x.id, reverse=True)
+            nm = tmp1[2]
 
-            if n1.id >=n2.id:
+            if n1.id >= n2.id:
                 sys.exit()
-            for i in range(1,nm):
-                link=Link(self,n1,n2,+(n1.loc - n2.loc))
+            for i in range(1, nm):
+                link = Link(self, n1, n2, +(n1.loc - n2.loc))
                 self.links.append(link)
                 n1.links.append(link)
                 n2.links.append(link)
@@ -128,7 +125,7 @@ class Topo:
 
         self.distanceDigits = round(math.ceil(math.log10(
             max(list(map(lambda x: x.l, self.links)) +
-                list(map(lambda x: math.abs(x), list(flat_map(lambda x: x.loc, self.nodes))))))))
+                list(map(lambda x: abs(x), list(flat_map(lambda x: x.loc, self.nodes))))))))
 
     # All links, entanglements and swappings are set to false.
     def clearEntanglements(self):
@@ -185,7 +182,6 @@ class Topo:
         # I don't understand this return statement.
         return float('inf'), []
 
-
     # Returns all routes for two nodes
     def getAllRoutes(self, n1_, n2_):
         n1, n2 = [min(n1_, n2_), max(n1_, n2_)]
@@ -197,7 +193,8 @@ class Topo:
         digest.update(bytearray(topoStr))
         # I'm not sure what to do with the routeStorage part
         result = []
-        range_ = self.kHopNeighbors(self.nodes[n1], (hopLimit + 1) / 2) + self.kHopNeighbors(self.nodes[n2], (hopLimit + 1) / 2)
+        range_ = self.kHopNeighbors(self.nodes[n1], (hopLimit + 1) / 2) + self.kHopNeighbors(self.nodes[n2],
+                                                                                             (hopLimit + 1) / 2)
         # If result is empty
         if not result:
             # Find all
@@ -215,14 +212,14 @@ class Topo:
                         if v not in l and remainingNeighbors:
                             l.append(v)
                             dfs(l, list(set(remainingNeighbors) - set(self.nodes[v])))
-                            l.pop(len(l)-1)
+                            l.pop(len(l) - 1)
+
             dfs(list(n1), list(set(self.nodes[n2].neighbors) - set(self.nodes[n1])))
 
             # Sort via Dijkstra
             # I'm not sure about this part
             p = {}
             return result
-
 
     # Returns all routes between two nodes
     def getAllElementCycles(self):
@@ -239,7 +236,7 @@ class Topo:
             resultSet = []
             for n in self.nodes:
                 # Not sure but maybe it has to be +1 to be inclusive
-                for length in range(3,10+1):
+                for length in range(3, 10 + 1):
                     def dfs(l):
                         tmp = l[-1].neighbors.intersection(l)
                         if len(l) == length:
@@ -250,11 +247,12 @@ class Topo:
                                 m = l.index(min(l))
                                 resultSet.append(l[m:len(l)] + l[0:m])
                         elif len(tmp) <= 1:
-                            filtered = filter(lambda it: len(l) == 1 or it != l[len(l)-2], l[-1].neighbors)
+                            filtered = filter(lambda it: len(l) == 1 or it != l[len(l) - 2], l[-1].neighbors)
                             for f in filtered:
                                 l.append(f)
                                 dfs(l)
                                 l.pop(len(l) - 1)
+
                     dfs(list(n))
             result.extend(resultSet)
             self.saveRoutes()
@@ -296,8 +294,7 @@ class Topo:
         if k > self.k:  return set(self.nodes)
 
         registered = [False for _ in self.nodes]
-        stack = []
-        stack.append(root)
+        stack = [root]
         registered[root.id] = True
 
         def work():
@@ -331,8 +328,7 @@ class Topo:
         registered = [False for _ in self.nodes]
         result = set()
 
-        stack = []
-        stack.append(root)
+        stack = [root]
         registered[root.id] = True
 
         def work():
@@ -355,8 +351,7 @@ class Topo:
         return result
 
     def getEstablishedEntanglements(self, node1, node2):
-        stack = []
-        stack.append((None, node1))
+        stack = [(None, node1)]
 
         result = []
 
