@@ -198,9 +198,14 @@ def generate(n, q, k, a, degree):
     disjoinSet = DisjointSet(n)
     for i in range(len(links)):
         disjoinSet.merge(links[i][0], links[i][1])
-    # havn't finished this part
-    ccs = list(map(lambda id, p: id.to(p),
-                   list(map(lambda x: x.to(disjoinSet.getgetRepresentative(x)), [i for i in range(0, n)]))))
+    # compute  ccs: =(o unitil n).map.map.groupby.map.sorted
+    t2 = list( map( lambda id,p:[id,p] ,
+                    list(map( lambda x:x.to(disjoinSet.getgetRepresentative(x))
+                    , [i for i in range(0,n)] ))))
+    t3=self.grouby_dict(t2,lambda x: x[1])
+    t4=list(map(lambda x: list(map(lambda x:x[0] ,t3[x]) ) ,t3))
+    ccs =sorted(t4,lambda x:-len(x))
+
     biggest = ccs[0]
     for i in range(1, len(ccs)):
         # this part I'm not sure since shuffle changes the order of original ccs list
