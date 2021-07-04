@@ -210,7 +210,7 @@ def generate(n, q, k, a, degree):
     for i in range(1, len(ccs)):
         # this part I'm not sure since shuffle changes the order of original ccs list
         ## ccs1 is not defined. Please check
-        tmp1 = random.shuffle(ccs1)[0:3]
+        tmp1 = random.shuffle(ccs[i])[0:3]
         for j in range(len(tmp1)):
             nearest = sorted(biggest, key=lambda x: sum(nodeLocs[x] - nodeLocs[tmp1[j]]))[0]
             tmp2 = sorted([nearest, tmp1[j]])
