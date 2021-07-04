@@ -140,20 +140,66 @@ class Topo:
 def generate(n,q,k,a,degree):
     alpha=a
     controllingD =math.sqrt(edgeLen*edgeLen/n)
+    links=[]
     while len(nodeLocs)<n :
         element=[random.uniform(0, 1)*100 for _ in range(2)]
-        
+        if all( sum(x-element)>controllingD/1.2 for x in nodeLocs) :
+            nodeLocs.append(element)
+    nodeLocs=sorted(nodeLocs, key=lambda x:x[0]+int(x[1]*10/edgeLen)*1000000)
+    def argument_function(beta):
+        # combination function needed to be finished
+        tmp_list=combination([i for i in range(0,n)])
+        for i in range( len(tmp_list)):
+            (l1,l2)=  list( map(lambda x: nodeLocs[x],[tmp_list[i][0],tmp_list[i][1]]))
+            # currentlty not sure about how "+" computes
+            d=sum(l2-l1)
+            if d<2*controllingD:
+                l= min([random.uniform(0,1) for i in range(50)])
+                r=math.exp(-beta*d)
+                if l<r:
+                    # to functions needed to be implemented
+                    links.append( tmp_list[i][0].to(tmp_list[i][1]))
+        return 2*float(len(links))/n
+    # dynSearch needed to be implememnted
+    beta=dynSearch(0,20,float(degree),False,0.2)
+    # DisjoinSet needed to be implemmented
+    disjoinSet=DisjoinSet(n)
+    for i in range(len(links)):
+        disjoinSet.merge(links[i][0],links[i][1])
+    # havn't finished this part
+    ccs =   list( map( lambda id,p:id.to(p) ,list(map( lambda x:x.to(disjoinSet.getgetRepresentative(x)), [i for i in range(0,n)] ))))
+    biggest=ccs[0]
+    for i in range(1,len(ccs)):
+        # this part I'm not sure since shuffle changes the order of original ccs list
+        tmp1=random.shuffle(ccs1)[0:3]
+        for j in range(len(tmp1)):
+            nearest=sorted(biggest, key=lambda x:sum(nodeLocs[x]-nodeLocs[tmp1[j]]))[0]
+            tmp2=sorted([nearest,tmp1[j]])
+            links.append(tmp2[0].to(tmp2[1]))
 
+    flat_map = lambda f, xs: (y for ys in xs for y in f(ys))
+    #     retrive the flatten list first
+    tmp_list=  list(flat_map( lambda x:  [x[0],x[1]],links))
+    #retriev dictionary to iterate
+    tmp_dict=self.grouby_dict(tmp_list,lambda x: x)
+    for key in tmp_dict:
+        if len(tmp_dict[key])/2<5:
+            # not sure if takes the right index, needed to double check
+            nearest= sorted([i for i in range(0,n)],lambda x:sum(nodeLocs[x]-nodeLocs[key]))[1:6-len(tmp_dict[key])/2 ]
+            tmp_list= list(map( lambda x:  [sorted[x,key][0],  sorted[x,key][1]] ,nearest))
+            # need to check what is added to links here
+            for item in tmp_list:
+                links.append(item)
+    nl="\n"
+    tmp_string1 = self.listtoString( list(map( lambda x:f"{int(random.uniform(0,1)*5+10)}"+self.listtoString(x," ")   ,nodeLocs)),nl)
+    tmp_string2 = self.listtoString (list(map( lambda x: f"{x[0]}"+f"{x[1]}"+f"{int(random.uniform(0,1)*5+3)}" ,links)),nl)
+    return Topo(f"""
+            {n}
+            {alpha}
+            {q}
+            {k}
+            {tmp_string1}
+            {tmp_string2}
+"""
 
-
-
-
-
-
-
-
-
-
-
-
-
+    )
