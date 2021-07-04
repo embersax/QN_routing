@@ -3,9 +3,11 @@ import random
 import sys
 import re
 from itertools import combinations, groupby
-
-from QN_routing.topo.Link import Link
-from QN_routing.topo.Node import Node
+# from QN_routing.utils.Disjoinset import Disjointset
+from .Node import Node
+from .Link import Link
+from ..utils.Disjoinset import Disjointset
+from ..utils.utils import *
 
 
 class Topo:
@@ -147,7 +149,7 @@ class Topo:
                     tmp += oldP[l]
                 P[i] = oldP[i] * atLeastM + exactlyM * tmp
             for i in range(0, mul):
-                oldP[m] = P[m]
+                oldP[i] = P[i]
 
         assert abs(sum(oldP) - 1.0) < 0.0001
 
@@ -195,14 +197,15 @@ def generate(n, q, k, a, degree):
     # dynSearch needed to be implememnted
     beta = dynSearch(0, 20, float(degree), False, 0.2)
     # DisjoinSet needed to be implemmented
-    disjoinSet = DisjointSet(n)
+    disjoinSet = Disjointset(n)
     for i in range(len(links)):
         disjoinSet.merge(links[i][0], links[i][1])
     # compute  ccs: =(o unitil n).map.map.groupby.map.sorted
     t2 = list( map( lambda id,p:[id,p] ,
                     list(map( lambda x:x.to(disjoinSet.getgetRepresentative(x))
                     , [i for i in range(0,n)] ))))
-    t3=self.grouby_dict(t2,lambda x: x[1])
+
+    t3=groupby_dict(t2,lambda x: x[1])
     t4=list(map(lambda x: list(map(lambda x:x[0] ,t3[x]) ) ,t3))
     ccs =sorted(t4,lambda x:-len(x))
 
