@@ -316,6 +316,169 @@ def generate(n, q, k, a, degree):
 
                 )
 
+### I added Vamsi's updated code
+    def getStatistics(self):
+
+        # I don't think we necessarily need to sort each and every one of these lists. Just the min() and the max() 
+        # will do. We can remove these once we are trying to optimize. For now, I'm doing exactly how the kotlin one 
+        # does. 
+
+        numLinks = sorted([len(node.links) for node in self.nodes])
+        numNeighbors = sorted([len([link.otherThan(node) for link in node.links]) for node in self.nodes])
+        linkLengths = sorted([(link.node1.loc - link.node2.loc) for link in self.links])
+        linkSuccPossibilities = sorted([pow(math.e, -self.alpha + linkLength) for linkLength in linkLengths])
+        numQubits = sorted([node.nQubits for node in self.nodes])
+
+        avgLinks = sum(numLinks) / self.n
+        avgNeighbors = sum(numNeighbors) / self.n
+        avgLinkLength = sum(linkLengths) / len(self.links)
+        avglinkSuccP = sum(linkSuccPossibilities) / len(self.links)
+        avgQubits = sum(numQubits) / self.n
+
+        # I didn't understand why the .format() is used here. I've rounded them off to the decimal places provided in
+        # the parameter S: ! I'm not sure that this string formatting is correct in Python. The $ is used in Kotlin 
+        # to introduce variables values 
+        return f"""
+
+              Topology:
+              {self.n} nodes, {len(self.links)} links         alpha: {self.alpha}  q: {self.q}
+              #links     per node                (Max, Avg, Min): {numLinks[-1]}                        {round(avgLinks, 2)}        {numLinks[0]}
+              #qubits    per node                (Max, Avg, Min): {numQubits[-1]}                           {round(avgQubits, 2)}       {numQubits[0]}
+              #neighbors per node                (Max, Avg, Min): {numNeighbors[-1]}                    {round(avgNeighbors, 2)}    {numNeighbors[0]} 
+              length of links       (km)         (Max, Avg, Min): {round(linkLengths[-1], 2)}               {round(avgLinkLength, 2)}   {round(linkLengths[0], 2)} 
+              P(entanglement succeed for a link) (Max, Avg, Min): {round(linkSuccPossibilities[-1], 2)} {round(avglinkSuccP, 2)}    {round(linkSuccPossibilities[0], 2)}
+
+              """
+
+    # Function to get the k-hop neighbors in the network.
+    def kHopNeighbors(self, root, k):
+        # In case we have a bigger k than the given in the initial conditions, we return all the nodes.
+        if k > self.k: return set(self.nodes)
+        # A list of false values with the length of nodes list.
+        registered = [False for _ in self.nodes]
+        # We create a stack and we push the root. We also set the root as a visited node.
+        stack = [root]
+        registered[root.id] = True
+
+        def work():
+            # We take the current node of the stack.
+            current = stack[-1]
+            # We go recursively through the stack if its size is equal or smaller than k+1.
+            if len(stack) <= k + 1:
+                # From the current node, we take all the nodes it has links with. We then take the ones that are not yet
+                # registered and build a set out of them.
+                unregisteredNeighbors = set(filter(lambda x: x.id not in registered,
+                                                   [Edge(link.node1, link.node2).otherThan(current) for link in
+                                                    current.links]))
+
+                for unregisteredNeighbor in unregisteredNeighbors:
+                    # We check the neighbor as visited.
+                    registered[unregisteredNeighbor.id] = True
+                    # We push the neighbor to the stack so that we can then evaluate the neighbor's neighbors.
+                    stack.append(unregisteredNeighbor)
+                    # We call recursively this function.
+                    work()
+                    # We pop the current node from the stack.
+                    stack.pop()
+
+        work()
+        # We return a list of the k neighbors.
+        res = []
+        for idx, val in enumerate(registered):
+            if val:
+                res.append(self.nodes[idx])
+            else:
+                res.append(self.sentinal)
+
+        res = set(filter(lambda x: x != self.sentianl, res))
+
+        return res
+
+    # It does the same as the previous function, but instead of returning a list of the k-neighbors, it returns all the
+    # links in the range.
+    def kHopNeighborLinks(self, root, k):
+        registered = [False for _ in self.nodes]
+        result = set()
+
+        stack = [root]
+        registered[root.id] = True
+
+        def work():
+            current = stack[-1]
+            result.union(self.current.links)
+
+            if len(stack) <= k + 1:
+                unregisteredNeighbors = set(filter(lambda x: x.id not in registered,
+                                                   [Edge(link.node1, link.node2).otherThan(current) for link in
+                                                    current.links]))
+
+                for unregisteredNeighbor in unregisteredNeighbors:
+                    registered[unregisteredNeighbor.id] = True
+                    stack.append(unregisteredNeighbor)
+                    work()
+                    stack.pop()
+
+        work()
+
+        return result
+
+    # Function to get the established entanglements on the topology.
+    def getEstablishedEntanglements(self, node1, node2):
+        # We create a stack of pairs: <link, node>
+        # We push n1 to the stack.
+        stack = [(None, node1)]
+        # Result is a list of paths, which are lists of nodes.
+        result = []
+
+        while stack:
+            incoming, current = stack.pop()
+            # We create a list with just one element: n2
+            if current == node2:
+                path = [node2]
+                ### As there may be an error, maybe we can use a try-catch
+                try:
+                    inc = incoming
+                except:
+                    raise RuntimeError('No such incoming node')
+                # For the incoming link, while its n1 and n2 aren't the n1 we are studying, we take the previous node.
+                # The previous node is either n2 (if the link's n1 is the last of the path) or n1 otherwise.
+                # We update inc to be the first (next) internal link that is not inc.
+                while inc.node1 != node1 and inc.node2 != node2:
+                    prev = inc.node2 if inc.node1 == path[-1] else inc.node1
+                    inc = [link.otherThan(inc) for link in prev.internalLinks if inc in link]
+                    path.append(prev)
+                # We add n1 to the path and reverse what we found
+                path.append(node1)
+                result.append(list(reversed(path)))
+                continue
+            # The if case happens in the first iteration. We take all the links that are not entangled/swapped.
+            # The second case chooses all links that contain the incoming one and maps them to the other side.
+            outgoingLinks = list(filter(lambda link: link.entangled and not link.swappedAt(current),
+                                        current.links)) if incoming is None else [link.otherThan(incoming) for link in
+                                                                                  list(filter(lambda internalLink:
+                                                                                              incoming in internalLink,
+                                                                                              current.internalLinks))]
+            # We push every link to the stack to be evaluated.
+            # The node that is pushed is the "other side" of current.
+            for outgoingLink in outgoingLinks:
+                stack.append([outgoingLink, Edge(outgoingLink.node1, outgoingLink.node2).otherThan(current)])
+
+        return result
+
+    def isClean(self):
+        areLinksClean, areNodesClean = True, True
+        for link in self.links:
+            areLinksClean = areLinksClean and not link.entangled and not link.assigned and link.notSwapped()
+        for node in self.nodes:
+            areNodesClean = areNodesClean and not node.internalLinks and node.nQubits == node.remainingQubits
+
+        return areLinksClean and areNodesClean
+
+    # This also has not been called anywhere
+    def linksBetween(self, node1, node2):
+        return list(filter(lambda link: node2 == link.node1 or node2 == link.node2, [link for link in node1.links]))
+
+
 
 ## Adding this part to run some basic tests on the generate() method.
 
