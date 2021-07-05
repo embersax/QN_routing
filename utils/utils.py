@@ -8,7 +8,7 @@ def dynSearch(xMin,xMax,yTarget,f,fIsIncreasing,precision):
     for i in range(0,100):
         step/=2
         y=f(x)
-        if math.abs(y-yTarget)<math.abs(precision):
+        if abs(y-yTarget)<abs(precision):
             break
         if (y>yTarget) ^ fIsIncreasing:
             x+=step
@@ -16,11 +16,13 @@ def dynSearch(xMin,xMax,yTarget,f,fIsIncreasing,precision):
             x-=step
     return x
 def groupby_dict(s, f):
-    tmp = {}
+    tmp_dict = {}
     for a, b in groupby(s, f):
-        for thing in b:
-            tmp[a] = b
-    return tmp
+        tmp=list(b)
+        # for thing in b:
+        tmp_dict[a]=tmp
+            # tmp[a] = b
+    return tmp_dict
 # here I implemet factorial as two input functions instead of an extended function of Int as Shouqian does
 def factorial_(first,until):
     initial=0

@@ -2,7 +2,7 @@
 class Disjointset:
 
     def __init__(self,n):
-        self.parentOf=[i for i in range(n)]
+        self.parentOf=[0 for i in range(n)]
 
     def getRepresentative(self,i):
         stack=[]
