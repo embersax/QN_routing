@@ -232,19 +232,17 @@ def generate(n, q, k, a, degree):
         ## element is a list but x is not. The '-' operator is not defined. Please recheck this part.
         # "+" operator matches the unaryPlus operator of Shouqian's code of Double Array
         element = [random.uniform(0, 1) * 100 for _ in range(2)]
-        if all(sum(list_minus(x,element)) > controllingD / 1.2 for x in nodeLocs):
+        if all(length(list_minus(x,element)) > controllingD / 1.2 for x in nodeLocs):
             nodeLocs.append(element)
     nodeLocs = sorted(nodeLocs, key=lambda x: x[0] + int(x[1] * 10 / edgeLen) * 1000000)
 
     def argument_function(beta):
 
-        # combination function needed to be finished
         ## An efficient algorithm is already available in itertools. Replacing with combinations() call
-        tmp_list = combinations([i for i in range(0, n)])
+        tmp_list =list( combinations([i for i in range(0, n)],2))
         for i in range(len(tmp_list)):
             (l1, l2) = list(map(lambda x: nodeLocs[x], [tmp_list[i][0], tmp_list[i][1]]))
-            # currentlty not sure about how "+" computes
-            d = sum(l2 - l1)
+            d = length(l2 - l1)
             if d < 2 * controllingD:
                 l = min([random.uniform(0, 1) for i in range(50)])
                 r = math.exp(-beta * d)
@@ -255,7 +253,7 @@ def generate(n, q, k, a, degree):
 
     # Can't fully debug unless the dynSearch and disjointSet are actually implemented
     # dynSearch needed to be implememnted
-    beta = dynSearch(0, 20, float(degree), False, 0.2)
+    beta = dynSearch(0, 20, float(degree),argument_function, False, 0.2)
     # DisjoinSet needed to be implemmented
     disjoinSet = Disjointset(n)
     for i in range(len(links)):

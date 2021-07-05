@@ -1,4 +1,5 @@
 
+import numpy as np
 from itertools import combinations, groupby
 import math
 def dynSearch(xMin,xMax,yTarget,f,fIsIncreasing,precision):
@@ -34,3 +35,6 @@ def list_minus(list1,list2):
     for i in range(len(list1)):
         result.append(list1[i]-list2[i])
     return result
+def length(x):
+
+    return np.linalg.norm(np.array(x))
