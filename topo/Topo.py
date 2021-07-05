@@ -84,7 +84,7 @@ class Topo:
         self.linkDigits = 0
         self.distanceDigits = 0
         self.internalLength = 0
-
+        x=input.splitlines()
         lines = list(filter(lambda x: x != "", re.sub("""\s*//.*$""", "", input.splitlines())))
         n = int(lines.pop(0))
         # Why do we have -sys.maxint and not sys.maxint ?
@@ -244,22 +244,22 @@ def generate(n, q, k, a, degree):
             (l1, l2) = list(map(lambda x: nodeLocs[x], [tmp_list[i][0], tmp_list[i][1]]))
             d = length(list_minus(l2,l1))
             if d < 2 * controllingD:
-                l = min([random.uniform(0, 1) for i in range(50)])
+                l = min([random.uniform(0, 1) for i in range(1,51)])
                 r = math.exp(-beta * d)
                 if l < r:
                     # to functions needed to be implemented
-                    links.append( to(tmp_list[i][0],tmp_list[i][1]))
+                    links.append( [tmp_list[i][0],tmp_list[i][1]])
         tmp1=len(links)
 
         return 2 * float(len(links)) / n
 
     # Can't fully debug unless the dynSearch and disjointSet are actually implemented
     # dynSearch needed to be implememnted,I just realized beta is not used Shouqian's code
-    beta = dynSearch(0, 20, float(degree),argument_function, False, 0.2)
+    beta = dynSearch(0.0, 20.0, float(degree),argument_function, False, 0.2)
     # DisjoinSet needed to be implemmented
     disjoinSet = Disjointset(n)
     for i in range(len(links)):
-        disjoinSet.merge(links[i].n1, links[i].n2)
+        disjoinSet.merge(links[i][0], links[i][1])
     # compute  ccs: =(o unitil n).map.map.groupby.map.sorted
     ### finish debugging before this part
     t1= list(map( lambda x: [x,disjoinSet.getRepresentative(x)] , [i for i in range(0,n)] ))
@@ -283,16 +283,17 @@ def generate(n, q, k, a, degree):
     ## groupby_dict, listtoString are functions Topo class objects. They seem to be used outside the class. So, making them static in this case.
     flat_map = lambda f, xs: (y for ys in xs for y in f(ys))
     #     retrive the flatten list first
-    tmp_list = list(flat_map(lambda x: [x.n1,x.n2], links))
+    tmp_list = list(flat_map(lambda x: [x[0],x[1]], links))
     # retriev dictionary to iterate
-    tmp_dict =groupby_dict(tmp_list, lambda x: x)
+    tmp_dict =groupby_dict_(tmp_list, lambda x: x)
+
     for key in tmp_dict:
         if len(tmp_dict[key]) / 2 < 5:
             # not sure if takes the right index, needed to double check
             nearest = sorted([i for i in range(0, n)], key=lambda x: length(    list_minus(nodeLocs[x],nodeLocs[key])))[
                       1:int(6 - len(tmp_dict[key]) / 2)]
 
-            tmp_list = list(map(lambda x: to(sorted([x, key])[0], sorted([x, key])[1]),
+            tmp_list = list(map(lambda x: [sorted([x, key])[0], sorted([x, key])[1]],
                                 nearest))
             # need to check what is added to links here
             for item in tmp_list:
@@ -300,18 +301,17 @@ def generate(n, q, k, a, degree):
 
     nl = "\n"
     tmp_string1 = Topo.listtoString(
-        list(map(lambda x: f"{int(random.uniform(0, 1) * 5 + 10)}" + Topo.listtoString(x, " "), nodeLocs)), nl)
+        list(map(lambda x: f"{int(random.uniform(0, 1) * 5 + 10)} " + Topo.listtoString(x, " "), nodeLocs)), nl)
     tmp_string2 = Topo.listtoString(
-        list(map(lambda x: f"{x.n1}" + f"{x.n2}" + f"{int(random.uniform(0, 1) * 5 + 3)}",
+        list(map(lambda x: f"{x[0]} " + f"{x[1] } " + f"{int(random.uniform(0, 1) * 5 + 3)}",
                  links))
         , nl)
-    return Topo(f"""
-            {n}
-            {alpha}
-            {q}
-            {k}
-            {tmp_string1}
-            {tmp_string2}
+    return Topo(f"""{n}
+{alpha}
+{q}
+{k}
+{tmp_string1}
+{tmp_string2}
 """
 
                 )
@@ -319,9 +319,9 @@ def generate(n, q, k, a, degree):
 ### I added Vamsi's updated code
     def getStatistics(self):
 
-        # I don't think we necessarily need to sort each and every one of these lists. Just the min() and the max() 
-        # will do. We can remove these once we are trying to optimize. For now, I'm doing exactly how the kotlin one 
-        # does. 
+        # I don't think we necessarily need to sort each and every one of these lists. Just the min() and the max()
+        # will do. We can remove these once we are trying to optimize. For now, I'm doing exactly how the kotlin one
+        # does.
 
         numLinks = sorted([len(node.links) for node in self.nodes])
         numNeighbors = sorted([len([link.otherThan(node) for link in node.links]) for node in self.nodes])
@@ -336,10 +336,9 @@ def generate(n, q, k, a, degree):
         avgQubits = sum(numQubits) / self.n
 
         # I didn't understand why the .format() is used here. I've rounded them off to the decimal places provided in
-        # the parameter S: ! I'm not sure that this string formatting is correct in Python. The $ is used in Kotlin 
-        # to introduce variables values 
+        # the parameter S: ! I'm not sure that this string formatting is correct in Python. The $ is used in Kotlin
+        # to introduce variables values
         return f"""
-
               Topology:
               {self.n} nodes, {len(self.links)} links         alpha: {self.alpha}  q: {self.q}
               #links     per node                (Max, Avg, Min): {numLinks[-1]}                        {round(avgLinks, 2)}        {numLinks[0]}
@@ -347,7 +346,6 @@ def generate(n, q, k, a, degree):
               #neighbors per node                (Max, Avg, Min): {numNeighbors[-1]}                    {round(avgNeighbors, 2)}    {numNeighbors[0]} 
               length of links       (km)         (Max, Avg, Min): {round(linkLengths[-1], 2)}               {round(avgLinkLength, 2)}   {round(linkLengths[0], 2)} 
               P(entanglement succeed for a link) (Max, Avg, Min): {round(linkSuccPossibilities[-1], 2)} {round(avglinkSuccP, 2)}    {round(linkSuccPossibilities[0], 2)}
-
               """
 
     # Function to get the k-hop neighbors in the network.
