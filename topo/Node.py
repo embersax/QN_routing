@@ -1,8 +1,40 @@
 import random
 
-from Quantum.Topo import to
+# from Quantum.Topo import to
 
+# from topo.Topo import to
+class Edge:
+    def __init__(self, n1, n2):
+        self.p = (n1, n2)
+        self.n1 = n1
+        self.n2 = n2
 
+    # Converts the tuple that conforms an edge into a list.
+    def toList(self):
+        return list(self.p)
+
+    # Given a node n, returns the other node in the edge.
+    def otherThan(self, n):
+        if n == self.n1:
+            return self.n2
+        elif n == self.n2:
+            return self.n1
+        else:
+            raise RuntimeError("Neither")
+
+    # Returns true if the node n is either n1 or n2.
+    def contains(self, n):
+        return self.n1 == n or self.n2 == n
+
+    # The hashcode of the edge is the xor function between the ids of both nodes.
+    def hashCode(self):
+        return self.n1.id ^ self.n2.id
+
+    # An exact same edge shares both n1 and n2. Note that the edge is bidirectional.
+    def equals(self, other):
+        return (type(other) is Edge) and (self.p == other.p or reversed(self.p) == other.p)
+def to(node1,node2):
+    return Edge(node1,node2)
 class Node:
     def __init__(self,
                  topo,
@@ -39,7 +71,7 @@ class Node:
         b = random.uniform(0, 1) <= self.topo.q
 
         if b:
-            self.internalLinks.append(link1 |to| link2)
+            self.internalLinks.append(to(link1,link2))
         return b
     
     # Need to figure out the string manipulation part

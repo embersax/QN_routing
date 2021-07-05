@@ -29,3 +29,8 @@ def factorial_(first,until):
 
 def C_(totalNum,targetNum):
     return factorial_(totalNum,totalNum - targetNum)/factorial_(targetNum,1)
+def list_minus(list1,list2):
+    result=[]
+    for i in range(len(list1)):
+        result.append(list1[i]-list2[i])
+    return result

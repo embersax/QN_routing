@@ -3,12 +3,72 @@ import random
 import sys
 import re
 from itertools import combinations, groupby
-# from QN_routing.utils.Disjoinset import Disjointset
-from .Node import Node
-from .Link import Link
-from ..utils.Disjoinset import Disjointset
-from ..utils.utils import *
 
+from topo.Node import Node
+from topo.Link import Link
+from utils.Disjoinset import Disjointset
+from utils.utils import *
+import numpy as np
+class Edge:
+    def __init__(self, n1, n2):
+        self.p = (n1, n2)
+        self.n1 = n1
+        self.n2 = n2
+
+    # Converts the tuple that conforms an edge into a list.
+    def toList(self):
+        return list(self.p)
+
+    # Given a node n, returns the other node in the edge.
+    def otherThan(self, n):
+        if n == self.n1:
+            return self.n2
+        elif n == self.n2:
+            return self.n1
+        else:
+            raise RuntimeError("Neither")
+
+    # Returns true if the node n is either n1 or n2.
+    def contains(self, n):
+        return self.n1 == n or self.n2 == n
+
+    # The hashcode of the edge is the xor function between the ids of both nodes.
+    def hashCode(self):
+        return self.n1.id ^ self.n2.id
+
+    # An exact same edge shares both n1 and n2. Note that the edge is bidirectional.
+    def equals(self, other):
+        return (type(other) is Edge) and (self.p == other.p or reversed(self.p) == other.p)
+
+
+"""This class represents the topology of the Quantum Network"""
+
+
+def priority(n1, n2):
+    if n1.id < n2.id:
+        return -1
+    elif n1.id > n2.id:
+        return 1
+    else:
+        return
+
+
+class Path:
+    """
+    A class for all the methods called as Path.<methodname>()
+    All methods in this class are static and are solely utilitarian
+    """
+
+    @staticmethod
+    def edges(path):
+        return [Edge(node1, node2) for (node1, node2) in zip(path[:len(path) - 1], path[1:])]
+
+    @staticmethod
+    def applyCycle():
+        # There isn't any call made to this function. If we see a need for this, it can be implemented then.
+        pass
+def to(node1,node2):
+    return Edge(node1,node2)
 
 class Topo:
 
@@ -169,10 +229,10 @@ def generate(n, q, k, a, degree):
     # #Added nodeLocs
     nodeLocs = []
     while len(nodeLocs) < n:
-
         ## element is a list but x is not. The '-' operator is not defined. Please recheck this part.
+        # "+" operator matches the unaryPlus operator of Shouqian's code of Double Array
         element = [random.uniform(0, 1) * 100 for _ in range(2)]
-        if all(sum(x - element) > controllingD / 1.2 for x in nodeLocs):
+        if all(sum(list_minus(x,element)) > controllingD / 1.2 for x in nodeLocs):
             nodeLocs.append(element)
     nodeLocs = sorted(nodeLocs, key=lambda x: x[0] + int(x[1] * 10 / edgeLen) * 1000000)
 
