@@ -50,9 +50,13 @@ class Node:
         self.links = []
         self.internalLinks = []
 
-        self.neighbors = {neighbor for neighbor in self.links.theOtherEndOf(self)}
-        self.remainingQubits = nQubits
+        # self.neighbors = {neighbor for neighbor in self.links.theOtherEndOf(self)}
 
+        self.remainingQubits = nQubits
+    # add property to neighbors can avoid the error on init part when links is empty list, but I havn't done the by lazy part
+    @property
+    def neighbors(self):
+        return {neighbor for neighbor in self.links.theOtherEndOf(self)}
     def attemptSwapping(self, link1, link2):
         if link1.node1 == self:
             assert not link1.swap1

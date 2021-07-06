@@ -85,7 +85,8 @@ class Topo:
         self.distanceDigits = 0
         self.internalLength = 0
         x=input.splitlines()
-        lines = list(filter(lambda x: x != "", re.sub("""\s*//.*$""", "", input.splitlines())))
+        x_next=list(map( lambda y:  re.sub("""\s*//.*$""", "" ,y)      ,x))
+        lines = list(filter(lambda x: x != "", x_next))
         n = int(lines.pop(0))
         # Why do we have -sys.maxint and not sys.maxint ?
         ## Python 3 has no maxint. Replacing it with maxsize
@@ -111,14 +112,14 @@ class Topo:
             tmp1 = tmp[0:2]
             tmp2 = list(map(lambda x: self.nodes[x], tmp1))
             # I made a tuple with n1 and n2, as Shouqian did.
-            (n1, n2) = sorted(tmp2, key=lambda x: x.id, reverse=True)
+            (n1, n2) = sorted(tmp2, key=lambda x: x.id)
             # I think it has to be tmp, as tmp1[2] is None.
             nm = tmp[2]
             assert n1.id < n2.id
             # I'm not sure but maybe as range is not inclusive for the upper limit, it has to be range(1,nm+1),
             # according to Shouqian's code.
             for i in range(1, nm + 1):
-                link = Link(self, n1, n2, +(n1.loc - n2.loc))
+                link = Link(self, n1, n2, length(list_minus(n1.loc,n2.loc)))
                 self.links.append(link)
                 n1.links.append(link)
                 n2.links.append(link)
