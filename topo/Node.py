@@ -1,5 +1,6 @@
 import random
 
+
 # from Quantum.Topo import to
 
 # from topo.Topo import to
@@ -33,9 +34,18 @@ class Edge:
     # An exact same edge shares both n1 and n2. Note that the edge is bidirectional.
     def equals(self, other):
         return (type(other) is Edge) and (self.p == other.p or reversed(self.p) == other.p)
-def to(node1,node2):
-    return Edge(node1,node2)
+
+# Creates an edge between two nodes
+def to(node1, node2):
+    return Edge(node1, node2)
+
+
 class Node:
+    # The constructor of a node. Parameters:
+    # A topology topo
+    # An id
+    # A localization of the node in the network
+    # The number of qubits, n_qubits, assigned to this node
     def __init__(self,
                  topo,
                  id,
@@ -53,10 +63,14 @@ class Node:
         # self.neighbors = {neighbor for neighbor in self.links.theOtherEndOf(self)}
 
         self.remainingQubits = nQubits
-    # add property to neighbors can avoid the error on init part when links is empty list, but I havn't done the by lazy part
+
+    # add property to neighbors can avoid the error on init part when links is empty list, but I havn't done the by
+    # lazy part
     @property
     def neighbors(self):
         return {neighbor for neighbor in self.links.theOtherEndOf(self)}
+
+    # Attempts link-swapping inside a node
     def attemptSwapping(self, link1, link2):
         if link1.node1 == self:
             assert not link1.swap1
@@ -75,11 +89,11 @@ class Node:
         b = random.uniform(0, 1) <= self.topo.q
 
         if b:
-            self.internalLinks.append(to(link1,link2))
+            self.internalLinks.append(to(link1, link2))
         return b
-    
+
     # Need to figure out the string manipulation part
-    
+
     # def toString(self):	pass
 
     # def toFullString(self):	pass
