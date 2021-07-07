@@ -35,6 +35,7 @@ class Edge:
     def equals(self, other):
         return (type(other) is Edge) and (self.p == other.p or reversed(self.p) == other.p)
 
+
 # Creates an edge between two nodes
 def to(node1, node2):
     return Edge(node1, node2)
