@@ -32,7 +32,7 @@ class Link:
         self.assigned = False
 
     # Given a node n, returns the node at the other end of the link.
-    def theOtherEndOf(self, node):
+    def otherThan(self, node):
         if self.node1 == node:
             return self.node2
         elif self.node2 == node:

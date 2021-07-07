@@ -1,16 +1,13 @@
 import math
-from .Node import Node
-from .Link import Link
-from ..utils.CollectionUtils import PriorityQueue
 import hashlib
 import sys
 import re
 from itertools import combinations, groupby
-from topo.Node import Node
+from topo.Node import Node, Edge
 from topo.Link import Link
 from utils.Disjoinset import Disjointset
 from utils.utils import *
-import numpy as np
+from utils.CollectionUtils import PriorityQueue
 import random
 
 hopLimit = 15
@@ -18,37 +15,6 @@ hopLimit = 15
 """This class defines an edge of the graph"""
 
 
-
-class Edge:
-    def __init__(self, n1, n2):
-        self.p = (n1, n2)
-        self.n1 = n1
-        self.n2 = n2
-
-    # Converts the tuple that conforms an edge into a list.
-    def toList(self):
-        return list(self.p)
-
-    # Given a node n, returns the other node in the edge.
-    def otherThan(self, n):
-        if n == self.n1:
-            return self.n2
-        elif n == self.n2:
-            return self.n1
-        else:
-            raise RuntimeError("Neither")
-
-    # Returns true if the node n is either n1 or n2.
-    def contains(self, n):
-        return self.n1 == n or self.n2 == n
-
-    # The hashcode of the edge is the xor function between the ids of both nodes.
-    def hashCode(self):
-        return self.n1.id ^ self.n2.id
-
-    # An exact same edge shares both n1 and n2. Note that the edge is bidirectional.
-    def equals(self, other):
-        return (type(other) is Edge) and (self.p == other.p or reversed(self.p) == other.p)
 
 
 def to(node1, node2):
@@ -161,10 +127,22 @@ class Topo:
     # This is the implementation of the shortestPath algorithm
     # We first need to take all edges (in both directions)
     def shortestPath(self, edges, src, dst, fStateMetric):
-        reversedEdges = [Edge(edge.n1, edge.otherThan(edge.n1)) for edge in edges]
-        allNodes = [edge.toList() for edge in reversedEdges]
-        # I'm having a lot of trouble implementing the neighborsOf part of the code-
-        neighborsOf = {}
+        ## a step-by-step decomposition of Shoqian's neighborsOf val
+
+        # reversedEdges = [Edge(edge.n2, edge.n1) for edge in edges]
+        # allEdges = [edge.toList() for edge in reversedEdges]  # this currently has reversedEdges only
+        # allEdges = allEdges.extend(edges)
+        # allEdgesList = allEdges.toList()
+        # connectedNodesViaEdges = groupby(allEdgesList, key=lambda x: x[0])
+        # neighborsOf = [Edge(key, Edge(val[1], fStateMetric[Edge(val[0], val[1])])) for key, val in connectedNodesViaEdges.items()]
+        # # I'm having a lot of trouble implementing the neighborsOf part of the code-
+        # neighborsOf = set(neighborsOf)
+
+        ## Trying to make it a one-liner hoping that it will make better use of space
+
+        neighborsOf = set([Edge(key, Edge(val[1], fStateMetric[Edge(val[0], val[1])])) for key, val in groupby(
+            [edge.toList() for edge in [Edge(edge.n2, edge.n1) for edge in edges]].extend(edges).toList(),
+            key=lambda x: x[0]).items()])
         prevFromSrc = {}
         D = dict.fromkeys(self.nodes, float('inf'))
         # Do we need to have a comparator? Can we just use a def
@@ -276,7 +254,7 @@ class Topo:
 
     def widthPhase2(self, path):
         tmp1 = min(list(map(lambda x: x.remainingQubits / 2, path[1:-1])))
-        p1 = tmp1 if tmp1 else sys.maxint
+        p1 = tmp1 if tmp1 else sys.maxsize
         p2 = min(list(
             map(lambda x: sum(1 for link in x[0].links if ((link.n1 == x[1] | link.n2 == x[1]) & (not link.assigned))),
                 list(zip(path[:-1], path[1:])))))
@@ -605,6 +583,8 @@ def generate(n, q, k, a, degree):
         list(map(lambda x: f"{x[0]} " + f"{x[1]} " + f"{int(random.uniform(0, 1) * 5 + 3)}",
                  links))
         , nl)
+
+
     return Topo(f"""{n}
 {alpha}
 {q}
