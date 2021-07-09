@@ -61,12 +61,12 @@ class ReducibleLazyEvaluation(MutableMapping):
     """A dictionary that applies an arbitrary key-altering
        function before accessing the keys"""
 
-    def __init__(self, *args):
+    def __init__(self, initilizer, pre = lambda x: x, post = lambda K,V : V):
         self.store = dict()
         # self.update(dict(*args, **kwargs))  # use the free update to set keys
-        self.initializer=args[0]
-        self.pre=args[1]
-        self.post=args[2]
+        self.initializer=initilizer
+        self.pre=pre
+        self.post=post
 
     def __getitem__(self, key ):
         # return self.store[self._keytransform(key)]

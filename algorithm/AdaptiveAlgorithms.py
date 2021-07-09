@@ -10,11 +10,11 @@ class OfflinePathBasedAlgorithm(Algorithm):
         super().__init__(topo)
         self.pathsSortedDynamically=[]
         self.extraPaths=[]
-        self.fStateMetric=ReducibleLazyEvaluation(initlizar, pre, post)
+        self.fStateMetric=ReducibleLazyEvaluation(lambda x : length(list_minus(x.n1.loc,x.n2.loc))+topo.internalLength)
         def initlizar( src,dst) :
             q = []
             # havn't finished edges
-            edges = groupby_dict()
+            edges = groupby_dict(    ,links)
             visited = {}
             p = topo.shortestPath(edges, src ,dst ,self.fStateMetric)
 
