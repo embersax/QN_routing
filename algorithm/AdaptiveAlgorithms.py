@@ -60,6 +60,8 @@ class OfflinePathBasedAlgorithm(Algorithm):
                 return path
         self.allowRecoveryPaths=True
         self.pathsSortedStatically=ReducibleLazyEvaluation(initlizar, pre, post)
+    def prepare(self):
+        assert self.topo.isClean()
 
 
 
