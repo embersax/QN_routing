@@ -14,6 +14,7 @@ class RecoveryPath:
     taken: int = 0
     available: int = 0
 
+# is super() call not necessary here?
 class OnlineAlgorithm(Algorithm):
     def __init__(self, topo, allowRecoveryPaths=True):
         self.topo = topo
