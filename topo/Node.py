@@ -68,6 +68,12 @@ class Node:
 
 
 
+def to(node1, node2):
+    return Edge(node1, node2)
+
+
+"""This class defines an edge of the graph"""
+
 class Edge:
     def __init__(self, n1, n2):
         self.p = (n1, n2)
