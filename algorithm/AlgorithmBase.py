@@ -20,7 +20,7 @@ class Algorithm(metaclass=abc.ABCMeta):
         assert self.topo.isClean()
         self.srcDstPairs.clear()
         self.srcDstPairs.extend(pairs)
-        for p in pairs: logWriter.write("{}⟷{}".format(p[0], p[1]))
+        for p in pairs: self.logWriter.write("{}⟷{}".format(p[0], p[1]))
         self.P2()
         self.tryEntanglement()
         self.P4()
