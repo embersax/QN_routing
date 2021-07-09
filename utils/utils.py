@@ -2,6 +2,7 @@
 import numpy as np
 from itertools import combinations, groupby
 import math
+from collections.abc import MutableMapping
 def dynSearch(xMin,xMax,yTarget,f,fIsIncreasing,precision):
     x=(xMin + xMax) / 2
     step=x
@@ -51,3 +52,41 @@ def list_minus(list1,list2):
 def length(x):
 
     return np.linalg.norm(np.array(x))
+
+#  here I din't extend dict class directlt , I tried something following the link of this
+#  https://stackoverflow.com/questions/3387691/how-to-perfectly-override-a-dict which I think is a better implememnbtation
+#  the different thing of this ReducibleLazyEvaluatio is that for _get_ method, it takes three functions as input
+#  initializer calculates a value based on key, pre transform a new key, post calculates a value based on (key,value)
+class ReducibleLazyEvaluation(MutableMapping):
+    """A dictionary that applies an arbitrary key-altering
+       function before accessing the keys"""
+
+    def __init__(self, *args, **kwargs):
+        self.store = dict()
+        self.update(dict(*args, **kwargs))  # use the free update to set keys
+
+    def __getitem__(self, key, initializer, pre ,post ):
+        # return self.store[self._keytransform(key)]
+        res = None
+        res = self.store[ self._keytransform(pre(key))]
+        if res is not None :
+            return post(key,res)
+        res = initializer(key)
+        self.store[self._keytransform(key)] = res
+
+        return post(key,res)
+
+    def __setitem__(self, key, value):
+        self.store[self._keytransform(key)] = value
+
+    def __delitem__(self, key):
+        del self.store[self._keytransform(key)]
+
+    def __iter__(self):
+        return iter(self.store)
+
+    def __len__(self):
+        return len(self.store)
+
+    def _keytransform(self, key):
+        return key
