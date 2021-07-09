@@ -3,22 +3,15 @@ import hashlib
 import sys
 import re
 from itertools import combinations, groupby
-from topo.Node import Node, Edge
-from topo.Link import Link
-from utils.Disjoinset import Disjointset
-from utils.utils import *
-from utils.CollectionUtils import PriorityQueue
+from QN_routing.topo.Node import Node, Edge
+from QN_routing.topo.Link import Link
+from QN_routing.utils.Disjoinset import Disjointset
+from QN_routing.utils.utils import *
+from QN_routing.utils.CollectionUtils import PriorityQueue
 import random
 
 hopLimit = 15
 
-"""This class defines an edge of the graph"""
-
-
-
-
-def to(node1, node2):
-    return Edge(node1, node2)
 
 def priority(n1, n2):
     if n1.id < n2.id:
@@ -555,7 +548,7 @@ def generate(n, q, k, a, degree):
         for j in range(len(tmp1)):
             nearest = sorted(biggest, key=lambda x: sum(nodeLocs[x] - nodeLocs[tmp1[j]]))[0]
             tmp2 = sorted([nearest, tmp1[j]])
-            links.append(to(tmp2[0], tmp2[1]))
+            links.append(Edge(tmp2[0], tmp2[1]))
 
     ## groupby_dict, listtoString are functions Topo class objects. They seem to be used outside the class. So, making them static in this case.
     flat_map = lambda f, xs: (y for ys in xs for y in f(ys))
