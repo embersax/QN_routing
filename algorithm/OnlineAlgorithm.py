@@ -7,12 +7,14 @@ from dataclasses import dataclass
 from functools import reduce
 from itertools import dropwhile
 
+
 @dataclass
 class RecoveryPath:
     path: Path
     width: int
     taken: int = 0
     available: int = 0
+
 
 # is super() call not necessary here?
 class OnlineAlgorithm(Algorithm):
@@ -25,6 +27,7 @@ class OnlineAlgorithm(Algorithm):
         #  HashMap<PickedPath, LinkedList<PickedPath>>()
         self.recoveryPaths = {}
         self.pathToRecoveryPaths = []
+
     def prepare(self):
         pass
 
@@ -66,22 +69,24 @@ class OnlineAlgorithm(Algorithm):
     def pickAndAssignPath(self, pick):
         return ''
 
-
     def P4(self):
 
         for pathWithWidth in self.majorPaths:
             _, width, majorPath = pathWithWidth
             oldNumPairs = len(self.topo.getEstablishedEntanglements(majorPath[0], majorPath[-1]))
-            recoveryPaths = sorted(self.recoveryPaths[pathWithWidth], key=lambda tup: len(tup[2])*10000 + majorPath.index(tup[2][0]))
+            recoveryPaths = sorted(self.recoveryPaths[pathWithWidth],
+                                   key=lambda tup: len(tup[2]) * 10000 + majorPath.index(tup[2][0]))
 
             for _, w, p in recoveryPaths:
-                available = min([len([link.contains(node2) and link.entangled for link in node1.links]) for node1, node2 in Path.edges(p)])
+                available = min(
+                    [len([link.contains(node2) and link.entangled for link in node1.links]) for node1, node2 in
+                     Path.edges(p)])
                 self.pathToRecoveryPaths[pathWithWidth].append(RecoveryPath(p, w, 0, available))
 
-            edges = list(zip(range(len(majorPath)-1), range(1, len(majorPath))))
+            edges = list(zip(range(len(majorPath) - 1), range(1, len(majorPath))))
             rpToWidth = {recPath[2]: recPath[1] for recPath in recoveryPaths}
 
-            for i in range(1, width+1):
+            for i in range(1, width + 1):
 
                 def filterForBrokenEdges(tup):
                     i1, i2 = tup
@@ -95,7 +100,8 @@ class OnlineAlgorithm(Algorithm):
 
                 for _, _, rp in recoveryPaths:
                     s1, s2 = majorPath.index(rp[0]), majorPath.index(rp[-1])
-                    reqdEdges = list(filter(lambda edge: edge in brokenEdges, list(zip(range(s1, s2), range(s1+1, s2+1)))))
+                    reqdEdges = list(
+                        filter(lambda edge: edge in brokenEdges, list(zip(range(s1, s2), range(s1 + 1, s2 + 1)))))
 
                     for edge in reqdEdges:
                         rpToEdges[rp] = edge
@@ -112,14 +118,27 @@ class OnlineAlgorithm(Algorithm):
                     repaired = False
                     next = 0
 
-                    toBeDone = True # a dummy variable to indicate the gaps and for indentation
-                    while toBeDone:
-                        # Not sure what this block is supposed to do.
-                        # tryRp block begin#
-                        repairedEdges = set()
-                        pickedRps = set()
-                        # tryRp block end#
+                    tryRpContinue = False
+                    for rp in list(sorted(list(
+                            filter(lambda it: rpToWidth[it] > 0 and not it in realPickedRps, edgeToRps[brokenEdge])),
+                                          key=lambda it: majorPath.index[it[0]] * 10000 + majorPath.index[it[-1]])):
+                        # there is only a single for loop in this case. So, I don't think the labeled continue makes a difference.
+                        if majorPath.index[rp[0]] < next:   continue
+                        next = majorPath.index[rp[-1]]
+                        repairedEdges = set(realRepairedEdges)
+                        pickedRps = set(realPickedRps)
 
+                        otherCoveredEdges = set(rpToEdges[rp]).difference(brokenEdge)
+
+                        for edge in otherCoveredEdges:
+                            prevRpSet = set(edgeToRps[edge]).intersection(set(pickedRps)).remove(rp)
+                            prevRp = prevRpSet[0] if prevRpSet else None
+
+                            if prevRp == None:
+                                repairedEdges.add(edge)
+
+                            else:
+                                continue
 
                         repaired = True
                         repairedEdges.add(brokenEdge)
@@ -148,7 +167,8 @@ class OnlineAlgorithm(Algorithm):
                     pathData.taken += 1
                     toAdd = Path.edges(rp)
                     toDelete = Path.edges(list(
-                        dropwhile(lambda it: it != rp[-1], list(reversed(list(dropwhile(lambda it: it != rp[0], acc)))))))
+                        dropwhile(lambda it: it != rp[-1],
+                                  list(reversed(list(dropwhile(lambda it: it != rp[0], acc)))))))
                     edgesOfNewPathAndCycles = set(Path.edges(acc)).difference(toDelete).union(toAdd)
 
                     # our implementation of ReducibleLazyEvaluation requires 2 inputs K and V but Shoqian initialized it with just one. Has to be looked at.
@@ -165,8 +185,10 @@ class OnlineAlgorithm(Algorithm):
                 for n12, next in zippedP:
                     prev, n = n12
 
-                    prevLinks = list(sorted(filter(lambda it: it.entangled and it.swappedAt(n) and prev in it, n.links), key=lambda it:it.id))[0]
-                    nextLinks = list(sorted(filter(lambda it: it.entangled and it.swappedAt(n) and next in it, n.links), key=lambda it:it.id))[0]
+                    prevLinks = list(sorted(filter(lambda it: it.entangled and it.swappedAt(n) and prev in it, n.links),
+                                            key=lambda it: it.id))[0]
+                    nextLinks = list(sorted(filter(lambda it: it.entangled and it.swappedAt(n) and next in it, n.links),
+                                            key=lambda it: it.id))[0]
 
                     prevAndNext = list(zip(prevLinks, nextLinks))
                     for l1, l2 in prevAndNext:
@@ -175,8 +197,7 @@ class OnlineAlgorithm(Algorithm):
             succ = len(self.topo.getEstablishedEntanglements(majorPath[0], majorPath[-1])) - oldNumPairs
             self.logWriter.write("""{}, {} {}""".format([it.id for it in majorPath], width, succ))
             for it in self.pathToRecoveryPaths[pathWithWidth]:
-                self.logWriter.write("""{}, {} {} {}""".format([it2.id for it2 in it.path], width, it.available, it.taken))
-
+                self.logWriter.write(
+                    """{}, {} {} {}""".format([it2.id for it2 in it.path], width, it.available, it.taken))
 
         self.logWriter.write("\n")
-
