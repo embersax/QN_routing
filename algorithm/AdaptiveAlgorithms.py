@@ -3,7 +3,7 @@ from topo.Topo import *
 from utils.utils import *
 from utils.Disjoinset import *
 import heapq
-
+import copy
 class OfflinePathBasedAlgorithm(Algorithm):
 
     def __init__(self,topo,allowRecoveryPaths=True):
@@ -12,9 +12,12 @@ class OfflinePathBasedAlgorithm(Algorithm):
         self.extraPaths=[]
         self.fStateMetric=ReducibleLazyEvaluation( initilizer=lambda x : length(list_minus(x.n1.loc,x.n2.loc))+topo.internalLength)
         def initlizar( src,dst) :
+            #  q is priority que and default comparator is  the value of l1 (l1, _)   ,
+            #  and each element of q should be  (Double, Path)
             q = []
-            # havn't finished edges
+            # tmp1 {Edge : list(link ) }
             tmp1 = groupby_dict( lambda x: to(x.n1,x.n1)   ,topo.links)
+            #  tmp2 List(edge)
             tmp2 = list( map(  lambda x: to(tmp1[x].n1 ,tmp1[x].n2 ),tmp1) )
             edges = set (tmp2)
             visited = {}
@@ -62,6 +65,67 @@ class OfflinePathBasedAlgorithm(Algorithm):
         self.pathsSortedStatically=ReducibleLazyEvaluation(initlizar, pre, post)
     def prepare(self):
         assert self.topo.isClean()
+
+    def P4Adaptive(self):
+        visited = set( list(filter(lambda x : x .swapped() , self.topo.links )))
+        for _ ,width , p in self.pathsSortedDynamically:
+            nodes = copy.deepcopy(p)
+            oldNumOfPairs = len(self.topo.getEstablishedEntanglements(p[0],p[-1]))
+            pendingInbound = node_dict(p)
+            pendingOutbound = node_dict(p)
+            for i in range(1, width+1):
+                segmentsToTry = []
+                segmentsToTry.append((0,len(p)-1))
+                while segmentsToTry is not []:
+                    si , di = segmentsToTry.pop(0)
+                    # for this part I think it's just create a topo instead of function of Node
+                    src,dst = nodes[si] ,nodes[di]
+                    links =  list(filter(lambda x:x.assigned,list(self.topo.kHopNeighbors(src).intersection(self.topo.kHopNeighbors(dst)))))
+                    #               for this part I'm not sure
+                    edges = list( map( lambda x: x    ,links.groupby_dict_(links,lambda x : to(x.n1,x.n2))))
+                    rp = self.topo.shortestPath(edges,src,dst,self.fStateMetric)
+                    if rp[1] is []:
+                        mi = (si+di)/2
+                        if mi !=si:
+                            segmentsToTry.append((si,di))
+                        if mi != di:
+                            segmentsToTry.append((mi,di))
+                    else:
+                        while(True):
+                            elinks = list(filter( lambda x: x.entangled and x not in visited,links))
+                            edges =  set(list(map(lambda x: to(x.n2,x.n2) ,elinks)))
+                            _ , rp = self. shortestPath(edges, src, dst,self.fStateMetric)
+                            if rp is None:
+                                break
+                            #     n12 [node,node]
+                            #     next node
+                            for n12 , next in   list(zip(list(zip(rp[0:-2],rp[1:-1])), rp[2:])):
+                                prev , n = n12
+                                prevLink = sorted(list(filter( lambda x: x.entangled and (prev in x  )  and ( not x.swappedAt(n))
+                                                        and ( True if x in pendingInbound[prev] else False),n.links)),
+                                                  key=lambda x: x.id)[0]
+
+                                nextLink = sorted(list(filter( lambda x: x.entangled and (next in x  )  and ( not x.swappedAt(n))
+                                                        and ( True if x in pendingInbound[next] else False),n.links)),
+                                                  key=lambda x: x.id)[0]
+                                if prevLink == None or nextLink == None:
+                                    continue
+                                visited.add(prevLink)
+                                visited.add(nextLink)
+
+                                if prev == rp[0] and not prevLink.swappedAt(prev):
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -53,10 +53,12 @@ def length(x):
 
     return np.linalg.norm(np.array(x))
 
-#  here I din't extend dict class directlt , I tried something following the link of this
+#  here I din't extend dict class directly , I tried something following the link of this
 #  https://stackoverflow.com/questions/3387691/how-to-perfectly-override-a-dict which I think is a better implememnbtation
-#  the different thing of this ReducibleLazyEvaluatio is that for _get_ method, it takes three functions as input
+#  the different thing of this ReducibleLazyEvaluatio is that for _get_ method, it uses three functions as input which I treated them
+#  as attribute to init
 #  initializer calculates a value based on key, pre transform a new key, post calculates a value based on (key,value)
+#  There are use cases that pre and post default is to be unchanged, and only initilizer needed to be passed .
 class ReducibleLazyEvaluation(MutableMapping):
     """A dictionary that applies an arbitrary key-altering
        function before accessing the keys"""
@@ -93,3 +95,11 @@ class ReducibleLazyEvaluation(MutableMapping):
 
     def _keytransform(self, key):
         return key
+
+
+def node_dict(p):
+    result = {}
+    for node in p:
+        result[node] = set()
+
+    return result
