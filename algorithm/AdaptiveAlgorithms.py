@@ -114,18 +114,38 @@ class OfflinePathBasedAlgorithm(Algorithm):
                                 visited.add(nextLink)
 
                                 if prev == rp[0] and not prevLink.swappedAt(prev):
+                                    pendIn =  list(sorted(pendingInbound[prev],key=lambda x:x.id))
+                                    pin = removeUntil(pendIn,lambda x: not x.swappedAt(prev))
+                                    if pin !=None:
+                                        prev.attemptSwapping(pin,prevLink)
+                                    else:
+                                        pendingOutbound[prev].add(prevLink)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                                if next == rp[-1] and not nextLink.swappedAt(next):
+                                    pendOut =  list(sorted(pendingInbound[next],key=lambda x:x.id))
+                                    pout = removeUntil(pendOut,lambda x: not x.swappedAt(next))
+                                    if pout !=None:
+                                        prev.attemptSwapping(pout,nextLink)
+                                    else:
+                                        pendingOutbound[next].add(nextLink)
+                                    n.attemptSwapping(prevLink, nextLink)
+                                if len(rp)==2:
+                                    prev , next = rp
+                                    pendIn = list(sorted(pendingInbound[prev], key=lambda x: x.id))
+                                    pendOut = list(sorted(pendingInbound[next], key=lambda x: x.id))
+                                    link = sorted(list(filter( lambda x: x.entangled and next in x and not (x.s1 and x.s2)
+                                                        and x not in pendIn and x not in pendOut and x not in visited,prev.links )))[0]
+                                    if link :
+                                        visited.add(link)
+                                        pin = removeUntil(pendIn,lambda x: not x.swappedAt(prev))
+                                        if pin and not link.swappedAt(prev):
+                                            prev.attemptSwapping(pin,link)
+                                        else:
+                                            pendingOutbound[prev].add(link)
+                                        pout = removeUntil(pendOut,lambda x: not x.swappedAt(next))
+                                        if pout and not link.swappedAt(next):
+                                            next.attemptSwapping(pout,link)
+                                        else:
+                                            pendingInbound[next].add(link)
+            succ = len(self.topo.getEstablishedEntanglements(p[0],p[-1])) - oldNumOfPairs
+            self.logWriter.write(f"{list(map(lambda x: x.id, p))} " + f"{width} {succ} " + "//offline")

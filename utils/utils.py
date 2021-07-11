@@ -103,3 +103,10 @@ def node_dict(p):
         result[node] = set()
 
     return result
+
+def removeUntil(T , f):
+    while T is not []:
+        e = T.pop(0)
+        if f(e):
+            return e
+    return None
