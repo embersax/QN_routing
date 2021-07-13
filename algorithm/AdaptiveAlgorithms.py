@@ -9,7 +9,7 @@ from abc import ABC
 
 # returns the priority based on the type and the element
 # trying to use this as a replacement for the dynamic comparator
-def getPriority(element, type=None):
+def getPriority(element, type):
     if type is None or type in {'SumDist', 'CR'}:
         return element
     elif type == 'MultiMetric':
@@ -69,7 +69,7 @@ class OfflinePathBasedAlgorithm(Algorithm, ABC):
 
         q, type = PriorityQueue(), self.priorityType
         for path in allPaths:
-            q.push(path, getPriority(path))
+            q.push(path, getPriority(path, self.priorityType))
 
         cnt = 0
 
@@ -78,12 +78,13 @@ class OfflinePathBasedAlgorithm(Algorithm, ABC):
             width = self.topo.widthPhase2(p[3])
 
             if width == 0:
-                q.push(p, getPriority(p))
+                q.push(p, getPriority(p, self.priorityType))
                 break
 
             if width < p[1]:
                 newP = (p[0], width, p[2])
-                q.push(newP, getPriority(newP))
+                # didn't add the priority type before
+                q.push(newP, getPriority(newP, self.priorityType))
                 continue
 
             self.pathsSortedDynamically.append(p)
@@ -118,9 +119,8 @@ class CreationRate(OfflinePathBasedAlgorithm):
     def __init__(self, topo, allowRecoveryPaths):
         super().__init__(topo, allowRecoveryPaths)
         self.name = 'CR-R' if allowRecoveryPaths else 'CR'
-        # not sure what n1, n2 and it are in shoqian's code for fStateMetric in this class
-        locDifference = 1.0
-        self.fStateMetric = ReducibleLazyEvaluation(math.exp(self.topo.alpha * length(locDifference)))
+        # this lambda function is the input to initialize ReducibleLazyEvaluation
+        self.fStateMetric = ReducibleLazyEvaluation(lambda link: math.exp(self.topo.alpha * length([link.node1.loc, link.node2.loc])))
         self.priorityType = 'CR'
 
 
