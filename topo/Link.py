@@ -32,7 +32,7 @@ class Link:
         self.assigned = False
 
     # Given a node n, returns the node at the other end of the link.
-    def theOtherEndOf(self, node):
+    def otherThan(self, node):
         if self.node1 == node:
             return self.node2
         elif self.node2 == node:
@@ -110,6 +110,7 @@ class Link:
     # Checks if we can assign qubits to the link
     def assignable(self):
         return not self.assigned and self.node1.remainingQubits > 0 and self.node3.remainingQubits > 0
+
 
 
 if __name__ == '__main-__':

@@ -1,49 +1,16 @@
 import math
-import random
+import hashlib
 import sys
 import re
 from itertools import combinations, groupby
+from QN_routing.topo.Node import Node, Edge
+from QN_routing.topo.Link import Link
+from QN_routing.utils.Disjoinset import Disjointset
+from QN_routing.utils.utils import *
+from QN_routing.utils.CollectionUtils import PriorityQueue
+import random
 
-from topo.Node import Node
-from topo.Link import Link
-from utils.Disjoinset import Disjointset
-from utils.utils import *
-import numpy as np
-
-
-class Edge:
-    def __init__(self, n1, n2):
-        self.p = (n1, n2)
-        self.n1 = n1
-        self.n2 = n2
-
-    # Converts the tuple that conforms an edge into a list.
-    def toList(self):
-        return list(self.p)
-
-    # Given a node n, returns the other node in the edge.
-    def otherThan(self, n):
-        if n == self.n1:
-            return self.n2
-        elif n == self.n2:
-            return self.n1
-        else:
-            raise RuntimeError("Neither")
-
-    # Returns true if the node n is either n1 or n2.
-    def contains(self, n):
-        return self.n1 == n or self.n2 == n
-
-    # The hashcode of the edge is the xor function between the ids of both nodes.
-    def hashCode(self):
-        return self.n1.id ^ self.n2.id
-
-    # An exact same edge shares both n1 and n2. Note that the edge is bidirectional.
-    def equals(self, other):
-        return (type(other) is Edge) and (self.p == other.p or reversed(self.p) == other.p)
-
-
-"""This class represents the topology of the Quantum Network"""
+hopLimit = 15
 
 
 def priority(n1, n2):
@@ -69,10 +36,6 @@ class Path:
     def applyCycle():
         # There isn't any call made to this function. If we see a need for this, it can be implemented then.
         pass
-
-
-def to(node1, node2):
-    return Edge(node1, node2)
 
 
 class Topo:
@@ -132,10 +95,115 @@ class Topo:
         self.linkDigits = round(math.ceil(math.log10(len(self.links))))
         flat_map = lambda f, xs: (y for ys in xs for y in f(ys))
 
-        ## abs is defined in the standard library itself. Replacing math.abs with abs
         self.distanceDigits = round(math.ceil(math.log10(
             max(list(map(lambda x: x.l, self.links)) +
                 list(map(lambda x: abs(x), list(flat_map(lambda x: x.loc, self.nodes))))))))
+
+    # All links, entanglements and swappings are set to false.
+    def clearEntanglements(self):
+        for link in self.links:
+            link.clearEntanglement()
+            link.swap1, link.swap2 = False, False
+
+        for node in self.nodes:
+            node.internalLinks.clear()
+            assert node.nQubits == node.remainingQubits
+
+    # We only clear the swappings in phase 4, but not the entanglements.
+    def clearOnlyPhase4(self):
+        for link in self.links:
+            link.swap1, link.swap2 = False, False
+
+        for node in self.nodes:
+            node.internalLinks.clear()
+
+    # This is the implementation of the shortestPath algorithm
+    # We first need to take all edges (in both directions)
+    def shortestPath(self, edges, src, dst, fStateMetric):
+        ## a step-by-step decomposition of Shoqian's neighborsOf val
+
+        # reversedEdges = [Edge(edge.n2, edge.n1) for edge in edges]
+        # allEdges = [edge.toList() for edge in reversedEdges]  # this currently has reversedEdges only
+        # allEdges = allEdges.extend(edges)
+        # allEdgesList = allEdges.toList()
+        # connectedNodesViaEdges = groupby(allEdgesList, key=lambda x: x[0])
+        # neighborsOf = [Edge(key, Edge(val[1], fStateMetric[Edge(val[0], val[1])])) for key, val in connectedNodesViaEdges.items()]
+        # # I'm having a lot of trouble implementing the neighborsOf part of the code-
+        # neighborsOf = set(neighborsOf)
+
+        ## Trying to make it a one-liner hoping that it will make better use of space
+
+        neighborsOf = set([Edge(key, Edge(val[1], fStateMetric[Edge(val[0], val[1])])) for key, val in groupby(
+            [edge.toList() for edge in [Edge(edge.n2, edge.n1) for edge in edges]].extend(edges).toList(),
+            key=lambda x: x[0]).items()])
+        prevFromSrc = {}
+        D = dict.fromkeys(self.nodes, float('inf'))
+        # Do we need to have a comparator? Can we just use a def
+        q = PriorityQueue()
+        D[src.id] = 0.0
+        q.push(src.nodeTo(self.sentinal), priority(src, self.sentinal))
+        while q:
+            # Not sure about this pop, but I think it is correct based on the comparator
+            (w, prev) = q.pop()
+            if w in prevFromSrc: continue
+            prevFromSrc[w] = prev
+
+            if w == dst:
+                path = []
+                cur = dst
+                while cur != self.sentinal:
+                    path.insert(0, cur)
+                    cur = prevFromSrc[cur]
+                return D[dst.id], path
+
+            for p in neighborsOf[w]:
+                neighbor, weight = p[0], p[1]
+                newDist = D[w.id] + weight
+                oldDist = D[neighbor.id]
+                if oldDist > newDist:
+                    D[neighbor.id] = newDist
+                    q.push(neighbor.nodeTo(w), priority(neighbor, w))
+        # I don't understand this return statement.
+        return float('inf'), []
+
+    # Returns all routes for two nodes
+    def getAllRoutes(self, n1_, n2_):
+        n1, n2 = [min(n1_, n2_), max(n1_, n2_)]
+        linksAndEdges = {}
+        for link in self.links:
+            linksAndEdges[link] = link.node1.nodeTo(link.node2)
+        topoStr = '\n'.join(str(el) for el in set(linksAndEdges))
+        digest = hashlib.sha256()
+        digest.update(bytearray(topoStr))
+        # I'm not sure what to do with the routeStorage part
+        result = []
+        range_ = self.kHopNeighbors(self.nodes[n1], (hopLimit + 1) / 2) + self.kHopNeighbors(self.nodes[n2],
+                                                                                             (hopLimit + 1) / 2)
+        # If result is empty
+        if not result:
+            # Find all
+            def dfs(l, remainingNeighbors):
+                if l[-1] == n2:
+                    result.append(list(l))
+                elif len(l) > hopLimit:
+                    return
+                else:
+                    filtered = filter(lambda it: it in range_, self.nodes[l[-1]].neighbors)
+                    map_ = {}
+                    for node in filtered:
+                        map_[node] = node.id
+                    for _, v in map_:
+                        if v not in l and remainingNeighbors:
+                            l.append(v)
+                            dfs(l, list(set(remainingNeighbors) - set(self.nodes[v])))
+                            l.pop(len(l) - 1)
+
+            dfs(list(n1), list(set(self.nodes[n2].neighbors) - set(self.nodes[n1])))
+
+            # Sort via Dijkstra
+            # I'm not sure about this part
+            p = {}
+            return result
 
     @staticmethod
     def listtoString(s, seperator):
@@ -157,29 +225,29 @@ class Topo:
         nl = "\n"
         tmp_dict = self.grouby_dict(self.links, lambda x: x.n1.to(x.n2))
         return f"""
-            {self.n}
-            {self.alpha}
-            {self.q}
-            {self.k}
-            {self.listtoString(list(map(lambda node: str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
-            {self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])), tmp_dict)), nl)}
-            """
+                {self.n}
+                {self.alpha}
+                {self.q}
+                {self.k}
+                {self.listtoString(list(map(lambda node: str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
+                {self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])), tmp_dict)), nl)}
+                """
 
     def toFullString(self):
         nl = "\n"
         tmp_dict = self.grouby_dict(self.links, lambda x: x.n1.to(x.n2))
         return f"""
-            {self.n}
-            {self.alpha}
-            {self.q}
-            {self.k}
-            {self.listtoString(list(map(lambda node: str(node.remainingQubits) + "/" + str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
-            {self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])) + str(len(tmp_dict[x])), tmp_dict)), nl)}
-            """
+                {self.n}
+                {self.alpha}
+                {self.q}
+                {self.k}
+                {self.listtoString(list(map(lambda node: str(node.remainingQubits) + "/" + str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
+                {self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])) + str(len(tmp_dict[x])), tmp_dict)), nl)}
+                """
 
     def widthPhase2(self, path):
         tmp1 = min(list(map(lambda x: x.remainingQubits / 2, path[1:-1])))
-        p1 = tmp1 if tmp1 else sys.maxint
+        p1 = tmp1 if tmp1 else sys.maxsize
         p2 = min(list(
             map(lambda x: sum(1 for link in x[0].links if ((link.n1 == x[1] | link.n2 == x[1]) & (not link.assigned))),
                 list(zip(path[:-1], path[1:])))))
@@ -201,7 +269,7 @@ class Topo:
 
         if sum(oldP) == 0:
             for i in range(0, mul):
-                oldP[i] = C_(mul, i) * p[1] ** (m) + (1 - p[1]) ** (mul - m)
+                oldP[i] = C_(mul, i) * p[1] ** (i) + (1 - p[1]) ** (mul - i)
             start = 2
         assert len(oldP) == mul + 1
 
@@ -222,107 +290,44 @@ class Topo:
         return sum(list(map(lambda x: x * oldP[x], [i for i in range(1, mul)]))) * self.q ** (s - 1)
 
 
-## Using the debug mode on Shoqian's and Ruilin's code line by line and assessing their equality and making changes accordingly.
+    # Returns all routes between two nodes
+    def getAllElementCycles(self):
+        linksAndEdges = {}
+        for link in self.links:
+            linksAndEdges[link] = link.node1.nodeTo(link.node2)
+        topoStr = '\n'.join(str(el) for el in set(linksAndEdges))
+        digest = hashlib.sha256()
+        digest.update(bytearray(topoStr))
+        # I'm not sure what to do with the routeStorage part
+        result = []
+        # If result is empty
+        if not result:
+            resultSet = []
+            for n in self.nodes:
+                # Not sure but maybe it has to be +1 to be inclusive
+                for length in range(3, 10 + 1):
+                    def dfs(l):
+                        tmp = l[-1].neighbors.intersection(l)
+                        if len(l) == length:
+                            if tmp == set(l[l.size - 2], n):
+                                tmp1 = {}
+                                for node in l: tmp1[node] = node.id
+                                l = tmp1
+                                m = l.index(min(l))
+                                resultSet.append(l[m:len(l)] + l[0:m])
+                        elif len(tmp) <= 1:
+                            filtered = filter(lambda it: len(l) == 1 or it != l[len(l) - 2], l[-1].neighbors)
+                            for f in filtered:
+                                l.append(f)
+                                dfs(l)
+                                l.pop(len(l) - 1)
 
-def generate(n, q, k, a, degree):
-    alpha = a
+                    dfs(list(n))
+            result.extend(resultSet)
+            self.saveRoutes()
+        # I don't understand this return statement
+        return dict.fromkeys(result, self.nodes)
 
-    ## Shoqian didn't explicitly create it in Topo.kt but it was assigned the value 100 in configs.kt
-    ## Manually assigning the value. But, at a later point in time, have to move this to configs.py file
-    edgeLen = 100.0
-    controllingD = math.sqrt(edgeLen * edgeLen / n)
-    links = []
-    # #Added nodeLocs
-    nodeLocs = []
-    while len(nodeLocs) < n:
-        ## element is a list but x is not. The '-' operator is not defined. Please recheck this part.
-        # "+" operator matches the unaryPlus operator of Shouqian's code of Double Array
-        element = [random.uniform(0, 1) * 100 for _ in range(2)]
-        if all(length(list_minus(x, element)) > controllingD / 1.2 for x in nodeLocs):
-            nodeLocs.append(element)
-    nodeLocs = sorted(nodeLocs, key=lambda x: x[0] + int(x[1] * 10 / edgeLen) * 1000000)
-
-    def argument_function(beta):
-        links.clear()
-        ## An efficient algorithm is already available in itertools. Replacing with combinations() call
-        tmp_list = list(combinations([i for i in range(0, n)], 2))
-        for i in range(len(tmp_list)):
-            (l1, l2) = list(map(lambda x: nodeLocs[x], [tmp_list[i][0], tmp_list[i][1]]))
-            d = length(list_minus(l2, l1))
-            if d < 2 * controllingD:
-                l = min([random.uniform(0, 1) for i in range(1, 51)])
-                r = math.exp(-beta * d)
-                if l < r:
-                    # to functions needed to be implemented
-                    links.append([tmp_list[i][0], tmp_list[i][1]])
-        tmp1 = len(links)
-
-        return 2 * float(len(links)) / n
-
-    # Can't fully debug unless the dynSearch and disjointSet are actually implemented
-    # dynSearch needed to be implememnted,I just realized beta is not used Shouqian's code
-    beta = dynSearch(0.0, 20.0, float(degree), argument_function, False, 0.2)
-    # DisjoinSet needed to be implemmented
-    disjoinSet = Disjointset(n)
-    for i in range(len(links)):
-        disjoinSet.merge(links[i][0], links[i][1])
-    # compute  ccs: =(o unitil n).map.map.groupby.map.sorted
-    ### finish debugging before this part
-    t1 = list(map(lambda x: [x, disjoinSet.getRepresentative(x)], [i for i in range(0, n)]))
-    # from shouqian's code it seems that t1 and t2 have the same transformation and t2 is basically same as t1, I'm not sure
-    t2 = list(map(lambda x: [x[0], x[1]], t1))
-    # [x,disjoinSet.getgetRepresentative(x)]
-    t3 = groupby_dict(t2, lambda x: x[1])
-    t4 = list(map(lambda x: list(map(lambda x: x[0], t3[x])), t3))
-    ccs = sorted(t4, key=lambda x: -len(x))
-
-    biggest = ccs[0]
-    for i in range(1, len(ccs)):
-        # this part I'm not sure since shuffle changes the order of original ccs list
-        ## ccs1 is not defined. Please check
-        tmp1 = random.shuffle(ccs[i])[0:3]
-        for j in range(len(tmp1)):
-            nearest = sorted(biggest, key=lambda x: sum(nodeLocs[x] - nodeLocs[tmp1[j]]))[0]
-            tmp2 = sorted([nearest, tmp1[j]])
-            links.append(to(tmp2[0], tmp2[1]))
-
-    ## groupby_dict, listtoString are functions Topo class objects. They seem to be used outside the class. So, making them static in this case.
-    flat_map = lambda f, xs: (y for ys in xs for y in f(ys))
-    #     retrive the flatten list first
-    tmp_list = list(flat_map(lambda x: [x[0], x[1]], links))
-    # retriev dictionary to iterate
-    tmp_dict = groupby_dict_(tmp_list, lambda x: x)
-
-    for key in tmp_dict:
-        if len(tmp_dict[key]) / 2 < 5:
-            # not sure if takes the right index, needed to double check
-            nearest = sorted([i for i in range(0, n)], key=lambda x: length(list_minus(nodeLocs[x], nodeLocs[key])))[
-                      1:int(6 - len(tmp_dict[key]) / 2)]
-
-            tmp_list = list(map(lambda x: [sorted([x, key])[0], sorted([x, key])[1]],
-                                nearest))
-            # need to check what is added to links here
-            for item in tmp_list:
-                links.append(item)
-
-    nl = "\n"
-    tmp_string1 = Topo.listtoString(
-        list(map(lambda x: f"{int(random.uniform(0, 1) * 5 + 10)} " + Topo.listtoString(x, " "), nodeLocs)), nl)
-    tmp_string2 = Topo.listtoString(
-        list(map(lambda x: f"{x[0]} " + f"{x[1]} " + f"{int(random.uniform(0, 1) * 5 + 3)}",
-                 links))
-        , nl)
-    return Topo(f"""{n}
-{alpha}
-{q}
-{k}
-{tmp_string1}
-{tmp_string2}
-"""
-
-                )
-
-    ### I added Vamsi's updated code
     def getStatistics(self):
 
         # I don't think we necessarily need to sort each and every one of these lists. Just the min() and the max()
@@ -483,12 +488,111 @@ def generate(n, q, k, a, degree):
         return list(filter(lambda link: node2 == link.node1 or node2 == link.node2, [link for link in node1.links]))
 
 
+def generate(n, q, k, a, degree):
+    alpha = a
+
+    ## Shoqian didn't explicitly create it in Topo.kt but it was assigned the value 100 in configs.kt
+    ## Manually assigning the value. But, at a later point in time, have to move this to configs.py file
+    edgeLen = 100.0
+    controllingD = math.sqrt(edgeLen * edgeLen / n)
+    links = []
+    # #Added nodeLocs
+    nodeLocs = []
+    while len(nodeLocs) < n:
+        ## element is a list but x is not. The '-' operator is not defined. Please recheck this part.
+        # "+" operator matches the unaryPlus operator of Shouqian's code of Double Array
+        element = [random.uniform(0, 1) * 100 for _ in range(2)]
+        if all(length(list_minus(x, element)) > controllingD / 1.2 for x in nodeLocs):
+            nodeLocs.append(element)
+    nodeLocs = sorted(nodeLocs, key=lambda x: x[0] + int(x[1] * 10 / edgeLen) * 1000000)
+
+    def argument_function(beta):
+        links.clear()
+        ## An efficient algorithm is already available in itertools. Replacing with combinations() call
+        tmp_list = list(combinations([i for i in range(0, n)], 2))
+        for i in range(len(tmp_list)):
+            (l1, l2) = list(map(lambda x: nodeLocs[x], [tmp_list[i][0], tmp_list[i][1]]))
+            d = length(list_minus(l2, l1))
+            if d < 2 * controllingD:
+                l = min([random.uniform(0, 1) for i in range(1, 51)])
+                r = math.exp(-beta * d)
+                if l < r:
+                    # to functions needed to be implemented
+                    links.append([tmp_list[i][0], tmp_list[i][1]])
+        tmp1 = len(links)
+
+        return 2 * float(len(links)) / n
+
+    # Can't fully debug unless the dynSearch and disjointSet are actually implemented
+    # dynSearch needed to be implememnted,I just realized beta is not used Shouqian's code
+    beta = dynSearch(0.0, 20.0, float(degree), argument_function, False, 0.2)
+    # DisjoinSet needed to be implemmented
+    disjoinSet = Disjointset(n)
+    for i in range(len(links)):
+        disjoinSet.merge(links[i][0], links[i][1])
+    # compute  ccs: =(o unitil n).map.map.groupby.map.sorted
+    ### finish debugging before this part
+    t1 = list(map(lambda x: [x, disjoinSet.getRepresentative(x)], [i for i in range(0, n)]))
+    # from shouqian's code it seems that t1 and t2 have the same transformation and t2 is basically same as t1, I'm not sure
+    t2 = list(map(lambda x: [x[0], x[1]], t1))
+    # [x,disjoinSet.getgetRepresentative(x)]
+    t3 = groupby_dict(t2, lambda x: x[1])
+    t4 = list(map(lambda x: list(map(lambda x: x[0], t3[x])), t3))
+    ccs = sorted(t4, key=lambda x: -len(x))
+
+    biggest = ccs[0]
+    for i in range(1, len(ccs)):
+        # this part I'm not sure since shuffle changes the order of original ccs list
+        ## ccs1 is not defined. Please check
+        tmp1 = random.shuffle(ccs[i])[0:3]
+        for j in range(len(tmp1)):
+            nearest = sorted(biggest, key=lambda x: sum(nodeLocs[x] - nodeLocs[tmp1[j]]))[0]
+            tmp2 = sorted([nearest, tmp1[j]])
+            links.append(Edge(tmp2[0], tmp2[1]))
+
+    ## groupby_dict, listtoString are functions Topo class objects. They seem to be used outside the class. So, making them static in this case.
+    flat_map = lambda f, xs: (y for ys in xs for y in f(ys))
+    #     retrive the flatten list first
+    tmp_list = list(flat_map(lambda x: [x[0], x[1]], links))
+    # retriev dictionary to iterate
+    tmp_dict = groupby_dict_(tmp_list, lambda x: x)
+
+    for key in tmp_dict:
+        if len(tmp_dict[key]) / 2 < 5:
+            # not sure if takes the right index, needed to double check
+            nearest = sorted([i for i in range(0, n)], key=lambda x: length(list_minus(nodeLocs[x], nodeLocs[key])))[
+                      1:int(6 - len(tmp_dict[key]) / 2)]
+
+            tmp_list = list(map(lambda x: [sorted([x, key])[0], sorted([x, key])[1]],
+                                nearest))
+            # need to check what is added to links here
+            for item in tmp_list:
+                links.append(item)
+
+    nl = "\n"
+    tmp_string1 = Topo.listtoString(
+        list(map(lambda x: f"{int(random.uniform(0, 1) * 5 + 10)} " + Topo.listtoString(x, " "), nodeLocs)), nl)
+    tmp_string2 = Topo.listtoString(
+        list(map(lambda x: f"{x[0]} " + f"{x[1]} " + f"{int(random.uniform(0, 1) * 5 + 3)}",
+                 links))
+        , nl)
+
+
+    return Topo(f"""{n}
+{alpha}
+{q}
+{k}
+{tmp_string1}
+{tmp_string2}
+"""
+
+                )
+
+### I added Vamsi's updated code
+
+
 ## Adding this part to run some basic tests on the generate() method.
 
 if __name__ == "__main__":
     generate(50, .9, 5, .1, 6)
 
-## Status:
-## Testing incomplete due to the lack of util function implementation.
-## Made minor changes to the code with clear comments. Please watch out for '##' which means I added the comment.
-## Testing can be completed within 1 or 2 days subject to the util function implementation.

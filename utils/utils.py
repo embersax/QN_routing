@@ -3,6 +3,7 @@ import numpy as np
 from itertools import combinations, groupby
 import math
 from collections.abc import MutableMapping
+
 def dynSearch(xMin,xMax,yTarget,f,fIsIncreasing,precision):
     x=(xMin + xMax) / 2
     step=x

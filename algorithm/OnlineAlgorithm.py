@@ -1,11 +1,24 @@
 from .AlgorithmBase import Algorithm
-from topo.Topo import Topo
+from topo.Topo import Topo, Path
 from topo.Node import to
 import numpy as np
 import heapq
+from utils.utils import ReducibleLazyEvaluation
 import abc
+from dataclasses import dataclass
+from functools import reduce
+from itertools import dropwhile
 
 
+@dataclass
+class RecoveryPath:
+    path: Path
+    width: int
+    taken: int = 0
+    available: int = 0
+
+
+# is super() call not necessary here?
 class OnlineAlgorithm(Algorithm):
     def __init__(self, topo, allowRecoveryPaths=True):
         super().__init__(topo)
@@ -15,6 +28,7 @@ class OnlineAlgorithm(Algorithm):
         self.majorPaths = []
         #  HashMap<PickedPath, LinkedList<PickedPath>>()
         self.recoveryPaths = {}
+        self.pathToRecoveryPaths = []
 
     def prepare(self):
         pass
@@ -54,7 +68,7 @@ class OnlineAlgorithm(Algorithm):
     # ops is a list of pairs of nodes
     # TODO: There's something weird call pmap in the kotlin code. I'm not sure but it looks it's not important, as it
     #  basically iterates over the pairs of nodes of the list.
-    # This function returns a list of picked path: a triple 
+    # This function returns a list of picked path: a triple
     def calCandidates(self, ops):
         for o in ops:
             src, dst = o[0], o[1]
@@ -163,3 +177,136 @@ class OnlineAlgorithm(Algorithm):
             for link in links:
                 link.assignQubits()
                 link.tryEntanglement()  # just for display
+
+    def P4(self):
+
+        for pathWithWidth in self.majorPaths:
+            _, width, majorPath = pathWithWidth
+            oldNumPairs = len(self.topo.getEstablishedEntanglements(majorPath[0], majorPath[-1]))
+            recoveryPaths = sorted(self.recoveryPaths[pathWithWidth],
+                                   key=lambda tup: len(tup[2]) * 10000 + majorPath.index(tup[2][0]))
+
+            for _, w, p in recoveryPaths:
+                available = min(
+                    [len([link.contains(node2) and link.entangled for link in node1.links]) for node1, node2 in
+                     Path.edges(p)])
+                self.pathToRecoveryPaths[pathWithWidth].append(RecoveryPath(p, w, 0, available))
+
+            edges = list(zip(range(len(majorPath) - 1), range(1, len(majorPath))))
+            rpToWidth = {recPath[2]: recPath[1] for recPath in recoveryPaths}
+
+            for i in range(1, width + 1):
+
+                def filterForBrokenEdges(tup):
+                    i1, i2 = tup
+                    n1, n2 = majorPath[i1], majorPath[i2]
+                    checkAny = [link.contains(n2) and link.assigned and link.notSwapped() for link in n1.links]
+                    return any(checkAny)
+
+                brokenEdges = list(filter(filterForBrokenEdges, edges))
+                edgeToRps = {brokenEdge: [] for brokenEdge in brokenEdges}
+                rpToEdges = {recPath[2]: [] for recPath in recoveryPaths}
+
+                for _, _, rp in recoveryPaths:
+                    s1, s2 = majorPath.index(rp[0]), majorPath.index(rp[-1])
+                    reqdEdges = list(
+                        filter(lambda edge: edge in brokenEdges, list(zip(range(s1, s2), range(s1 + 1, s2 + 1)))))
+
+                    for edge in reqdEdges:
+                        rpToEdges[rp] = edge
+                        edgeToRps[edge] = rp
+
+                realPickedRps = {}
+                realRepairedEdges = {}
+
+                # Try to cover the broken edges
+
+                for brokenEdge in brokenEdges:
+                    if brokenEdge in realRepairedEdges:
+                        continue
+                    repaired = False
+                    next = 0
+
+                    tryRpContinue = False
+                    for rp in list(sorted(list(
+                            filter(lambda it: rpToWidth[it] > 0 and not it in realPickedRps, edgeToRps[brokenEdge])),
+                                          key=lambda it: majorPath.index[it[0]] * 10000 + majorPath.index[it[-1]])):
+                        # there is only a single for loop in this case. So, I don't think the labeled continue makes a difference.
+                        if majorPath.index[rp[0]] < next:   continue
+                        next = majorPath.index[rp[-1]]
+                        repairedEdges = set(realRepairedEdges)
+                        pickedRps = set(realPickedRps)
+
+                        otherCoveredEdges = set(rpToEdges[rp]).difference(brokenEdge)
+
+                        for edge in otherCoveredEdges:
+                            prevRpSet = set(edgeToRps[edge]).intersection(set(pickedRps)).remove(rp)
+                            prevRp = prevRpSet[0] if prevRpSet else None
+
+                            if prevRp == None:
+                                repairedEdges.add(edge)
+
+                            else:
+                                continue
+
+                        repaired = True
+                        repairedEdges.add(brokenEdge)
+                        pickedRps.add(rp)
+
+                        for item1, item2 in zip(realPickedRps, pickedRps):
+                            item = item1 - item2
+                            rpToWidth[item] += 1
+                            item = -item
+                            rpToWidth[item] -= 1
+
+                        realPickedRps = pickedRps
+                        realRepairedEdges = repairedEdges
+                        break
+
+                    if not repaired:
+                        break
+
+                def doInFold(acc, rp):
+                    idx = -1
+                    for ele in self.pathToRecoveryPaths[pathWithWidth]:
+                        if ele.path == rp:
+                            idx = self.pathToRecoveryPaths[pathWithWidth].index(ele)
+
+                    pathData = self.pathToRecoveryPaths[pathWithWidth][idx]
+                    pathData.taken += 1
+                    toAdd = Path.edges(rp)
+                    toDelete = Path.edges(list(
+                        dropwhile(lambda it: it != rp[-1],
+                                  list(reversed(list(dropwhile(lambda it: it != rp[0], acc)))))))
+                    edgesOfNewPathAndCycles = set(Path.edges(acc)).difference(toDelete).union(toAdd)
+
+                    # our implementation of ReducibleLazyEvaluation requires 2 inputs K and V but Shoqian initialized it with just one. Has to be looked at.
+                    p = self.topo(edgesOfNewPathAndCycles, acc[0], acc[-1], ReducibleLazyEvaluation(1.0))
+                    return p
+
+                def foldLeft(realPickedRps, majorPath):
+                    return reduce(doInFold, realPickedRps, majorPath)
+
+                p = foldLeft(realPickedRps, majorPath)
+
+                zippedP = list(zip(list(zip(p[:-2], p[1:]))[:-1], p[2:]))
+
+                for n12, next in zippedP:
+                    prev, n = n12
+
+                    prevLinks = list(sorted(filter(lambda it: it.entangled and it.swappedAt(n) and prev in it, n.links),
+                                            key=lambda it: it.id))[0]
+                    nextLinks = list(sorted(filter(lambda it: it.entangled and it.swappedAt(n) and next in it, n.links),
+                                            key=lambda it: it.id))[0]
+
+                    prevAndNext = list(zip(prevLinks, nextLinks))
+                    for l1, l2 in prevAndNext:
+                        n.attemptSwapping(l1, l2)
+
+            succ = len(self.topo.getEstablishedEntanglements(majorPath[0], majorPath[-1])) - oldNumPairs
+            self.logWriter.write("""{}, {} {}""".format([it.id for it in majorPath], width, succ))
+            for it in self.pathToRecoveryPaths[pathWithWidth]:
+                self.logWriter.write(
+                    """{}, {} {} {}""".format([it2.id for it2 in it.path], width, it.available, it.taken))
+
+        self.logWriter.write("\n")
