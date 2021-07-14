@@ -62,8 +62,7 @@ class OnlineAlgorithm(Algorithm):
                     if pick is not None and pick[0] > 0.0:
                         self.pickAndAssignPath(pick, majorPath)
 
-    def P4(self):
-        pass
+
 
     # ops is a list of pairs of nodes
     # TODO: There's something weird call pmap in the kotlin code. I'm not sure but it looks it's not important, as it
@@ -149,7 +148,7 @@ class OnlineAlgorithm(Algorithm):
 
                         if oldE[0] < newE[0]:
                             E[neighbor.id] = newE
-                            heapq.heappush(q (priority(to(neighbor, u)), to(neighbor, u)))
+                            heapq.heappush(q, (priority(to(neighbor, u)), to(neighbor, u)))
 
                 if candidate is not None: break
         return [c for c in candidate if c is not None]
