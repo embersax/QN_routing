@@ -58,7 +58,7 @@ class Link:
 
     # Logical inverse of swapped() function
     def notSwapped(self):
-        return not self.swapped(self)
+        return not self.swapped()
 
     # Returns the hashcode (id) of the link
     def hashCode(self):
@@ -109,7 +109,7 @@ class Link:
 
     # Checks if we can assign qubits to the link
     def assignable(self):
-        return not self.assigned and self.node1.remainingQubits > 0 and self.node3.remainingQubits > 0
+        return not self.assigned and self.node1.remainingQubits > 0 and self.node2.remainingQubits > 0
 
 
 
