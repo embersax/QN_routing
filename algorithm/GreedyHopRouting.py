@@ -58,7 +58,7 @@ class GreedyHopRouting(Algorithm):
 
         succ =  len(self.topo.getEstablishedEntanglements(p[0].p[-1])) - oldNumOfPairs
 
-        logWriter.write( f"{list(map( lambda x:x.id   ,   p))} "  +  f"{width} {succ} ")
+        self.logWriter.write( f"{list(map( lambda x:x.id   ,   p))} "  +  f"{width} {succ} ")
 
 
 
