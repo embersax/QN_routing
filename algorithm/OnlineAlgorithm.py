@@ -1,6 +1,6 @@
 from .AlgorithmBase import Algorithm
-from ..Topo import Topo
-from ..Node import to
+from topo.Topo import Topo
+from topo.Node import to
 import numpy as np
 import heapq
 import abc
@@ -8,7 +8,7 @@ import abc
 
 class OnlineAlgorithm(Algorithm):
     def __init__(self, topo, allowRecoveryPaths=True):
-        self.topo = topo
+        super().__init__(topo)
         self.allowRecoveryPaths = allowRecoveryPaths
         self.name = 'Online'.join('-R' if allowRecoveryPaths else '')
         # This is a list of PickedPaths
@@ -27,7 +27,8 @@ class OnlineAlgorithm(Algorithm):
         self.pathToRecoveryPaths.clear()
         while True:
             candidates = self.calCandidates(self.srcDstPairs)
-            pick = max(candidates[0])
+            # maxby first element
+            pick = max(candidates,key=lambda x: x[0])
             if pick is not None and pick[0] > 0.0:
                 self.pickAndAssignPath(pick)
             else:
@@ -42,8 +43,8 @@ class OnlineAlgorithm(Algorithm):
             for l in range(1, self.topo.k):
                 for i in range(0, len(p) - l - 1):
                     (src, dst) = to(p[i], p[i + l])
-                    candidates = self.calCandidates(list(tuple(src, dest)))
-                    pick = max(candidates[0])
+                    candidates = self.calCandidates(list(tuple(src, dst)))
+                    pick = max(candidates,key=lambda x: x[0])
                     if pick is not None and pick[0] > 0.0:
                         self.pickAndAssignPath(pick, majorPath)
 
@@ -63,7 +64,7 @@ class OnlineAlgorithm(Algorithm):
             candidate = None
             # In the kotlin code it goes until 1 but, to include 1, we must set the range parameter to 0
             for w in range(maxM, 0, -1):
-                a, b, c = set(topo.nodes), set(src), set(dst)
+                a, b, c = set(self.topo.nodes), set(src), set(dst)
                 # We subtract the intersection from the union to get the difference between the three sets.
                 tmp = (a | b | c) - (a & b & c)
                 # In the kotlin code, it's a hashset, but I think a set works fine.
@@ -116,7 +117,7 @@ class OnlineAlgorithm(Algorithm):
                 # TODO: Ask about the priority queue implementation
                 q = []
                 E[src.id] = (float('inf'), np.zeros(w + 1))
-                heapq.heappush(queue, (priority(to(src, self.topo.sentinal)), to(src, self.topo.sentinal)))
+                heapq.heappush(q, (priority(to(src, self.topo.sentinal)), to(src, self.topo.sentinal)))
                 while q:
                     u, prev = q[0], q[1]  # invariant: top of q reveals the node with highest e under m
                     if u in prevFromSrc: continue  # skip same node suboptimal paths
@@ -134,7 +135,7 @@ class OnlineAlgorithm(Algorithm):
 
                         if oldE[0] < newE[0]:
                             E[neighbor.id] = newE
-                            heapq.heappush(queue, (priority(to(neighbor, u)), to(neighbor, u)))
+                            heapq.heappush(q (priority(to(neighbor, u)), to(neighbor, u)))
 
                 if candidate is not None: break
         return [c for c in candidate if c is not None]
