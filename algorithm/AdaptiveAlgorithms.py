@@ -71,8 +71,8 @@ class OfflinePathBasedAlgorithm(Algorithm):
         for _ ,width , p in self.pathsSortedDynamically:
             nodes = copy.deepcopy(p)
             oldNumOfPairs = len(self.topo.getEstablishedEntanglements(p[0],p[-1]))
-            pendingInbound = node_dict(p)
-            pendingOutbound = node_dict(p)
+            pendingInbound = {node :set() for node in p}
+            pendingOutbound = {node: set() for node in p}
             for i in range(1, width+1):
                 segmentsToTry = []
                 segmentsToTry.append((0,len(p)-1))
