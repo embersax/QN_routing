@@ -1,11 +1,11 @@
-from algorithm.AlgorithmBase import Algorithm
-from topo.Topo import *
-from utils.utils import *
-from utils.Disjoinset import *
-from utils.CollectionUtils import PriorityQueue
+from QN_routing.algorithm.AlgorithmBase import Algorithm
+from QN_routing.topo.Topo import *
+from QN_routing.utils.utils import *
+from QN_routing.utils.Disjoinset import *
+from QN_routing.utils.CollectionUtils import PriorityQueue
 import heapq
 import copy
-from topo.Node import to
+from QN_routing.topo.Node import to
 
 
 # returns the priority based on the type and the element

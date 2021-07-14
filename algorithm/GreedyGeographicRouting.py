@@ -1,7 +1,7 @@
-from algorithm.AlgorithmBase import Algorithm
-from topo.Topo import Topo, Edge, Path
+from QN_routing.algorithm.AlgorithmBase import Algorithm
+from QN_routing.topo.Topo import Topo, Edge, Path
 from itertools import cycle
-from utils.utils import length
+from QN_routing.utils.utils import length
 
 class GreedyGeographicRouting(metaclass=Algorithm):
     def __init__(self, topo):

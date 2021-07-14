@@ -1,7 +1,7 @@
-from algorithm.AlgorithmBase import Algorithm
-from topo.Link import Link
-from topo.Node import Node
-from topo.Topo import Topo
+from QN_routing.algorithm.AlgorithmBase import Algorithm
+from QN_routing.topo.Link import Link
+from QN_routing.topo.Node import Node
+from QN_routing.topo.Topo import Topo
 from itertools import cycle
 class GreedyHopRouting(Algorithm):
     def __init__(self,topo):
