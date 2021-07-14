@@ -1,7 +1,7 @@
-from QN_routing.algorithm.AlgorithmBase import Algorithm
-from QN_routing.topo.Topo import Topo, Edge
+from algorithm.AlgorithmBase import Algorithm
+from topo.Topo import Topo, Edge, Path
 from itertools import cycle
-from QN_routing.utils.utils import length
+from utils.utils import length
 
 class GreedyGeographicRouting(metaclass=Algorithm):
     def __init__(self, topo):
@@ -47,11 +47,12 @@ class GreedyGeographicRouting(metaclass=Algorithm):
                 self.pathsSortedDynamically.append([0, width, p])
 
                 for i in range(1, width + 1):
-                    for n1, n2 in p.edges:
+                    for n1, n2 in Path.edges(p):
                         next(x for x in n1.links if x.contains(n2) and not x.assigned).assignQubits()
                 count += 1
 
     def P4(self):
+        oldNumOfPairs = 0
         for _, width, p in self.pathsSortedDynamically:
             oldNumOfPairs = len(self.topo.getEstablishedEntanglements(p[0], p[-1]))
             tmp = list(zip(list(zip(p[0:-2], p[1:-1])), p[2:]))
