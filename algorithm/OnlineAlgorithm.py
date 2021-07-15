@@ -41,8 +41,7 @@ class OnlineAlgorithm(Algorithm):
         self.pathToRecoveryPaths.clear()
         while True:
             candidates = self.calCandidates(self.srcDstPairs)
-            # maxby first element
-            pick = max(candidates,key=lambda x: x[0])
+            pick = max(candidates[0])
             if pick is not None and pick[0] > 0.0:
                 self.pickAndAssignPath(pick)
             else:
@@ -58,11 +57,9 @@ class OnlineAlgorithm(Algorithm):
                 for i in range(0, len(p) - l - 1):
                     (src, dst) = to(p[i], p[i + l])
                     candidates = self.calCandidates(list(tuple(src, dst)))
-                    pick = max(candidates,key=lambda x: x[0])
+                    pick = max(candidates[0])
                     if pick is not None and pick[0] > 0.0:
                         self.pickAndAssignPath(pick, majorPath)
-
-
 
     # ops is a list of pairs of nodes
     # TODO: There's something weird call pmap in the kotlin code. I'm not sure but it looks it's not important, as it

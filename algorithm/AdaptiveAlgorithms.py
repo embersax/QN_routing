@@ -6,6 +6,7 @@ from utils.CollectionUtils import PriorityQueue
 import heapq
 import copy
 from topo.Node import to
+import time
 
 
 # returns the priority based on the type and the element
@@ -30,6 +31,9 @@ class OfflinePathBasedAlgorithm(Algorithm):
         self.priorityType = None
         self.pathsSortedDynamically = []
         self.extraPaths = []
+        self.topo = topo
+        self.extraPaths = []
+        self.pathsSortedDynamically = []
         self.fStateMetric = ReducibleLazyEvaluation(
             initilizer=lambda x: length(list_minus(x.n1.loc, x.n2.loc)) + topo.internalLength)
 
@@ -92,6 +96,93 @@ class OfflinePathBasedAlgorithm(Algorithm):
 
     def prepare(self):
         assert self.topo.isClean()
+
+    def P2Recovery(self, q):
+        secondaryPaths = self.pathsSortedDynamically.extend(list(q))
+        for p in secondaryPaths:
+            sum = 0
+            for edge in p[2].edges:
+                n1, n2 = edge[0], edge[1]
+                available = [link for link in n1.links if link.contains(n2) and not link.assigned]
+                sum += len(available)
+                for a in available:
+                    if n1.remainingQubits > 0 and n2.remainingQubits > 0:
+                        a.assignQubits()
+            if sum > 0:
+                self.logWriter.write('\n'.join(node.id for node in p[2]))
+                self.logWriter.write(sum)
+
+    # I'm not sure about the condition of the while. Perhaps we should check this out on Shouquian's code.
+    def P2Online(self, q):
+        # flagBox = [True for i in range(len(self.srcDstPairs))]
+        picked = False
+        # TODO: I think it works with only a boolean flag.
+        while not picked:
+            src, dst = pair[0], pair[1]
+            maxM = min(src.remainingQubits, dst.remainingQubits)
+            picked = False
+            for width in range(maxM, 0, -1):
+                a, b, c = set(self.topo.nodes), set(src), set(dst)
+                tmp = (a | b | c) - (a & b & c)
+                failNodes = set([node for node in tmp if node.remainingQubits < 2 * w])
+                tmp0 = [link for link in self.topo.links if
+                        not link.assigned and link.node1 not in failNodes and link.node2 not in failNodes]
+                tmp1 = {}
+                for link in tmp0:
+                    if (link.node1, link.node2) in tmp1:
+                        tmp1[link].append(link)
+                    else:
+                        tmp1[(link.node1, link.node2)] = [link]
+                # So I think we do not need the filter part if we do it this way. We only need the edges.
+                edges = set([edge for edge in tmp1 if len(tmp1[edge]) >= w])
+                # TODO: Reducible lazy evaluation
+                neighborsOf = {}
+                # key: node, value: list of nodes
+                neighborsOf = {}
+                for edge in edges:
+                    if edge.node1 in neighborsOf:
+                        neighborsOf[edge.node1].append(edge.node2)
+                    else:
+                        neighborsOf[edge.node1] = [edge.node2]
+                    if edge.node2 in neighborsOf:
+                        neighborsOf[edge.node2].append(edge.node1)
+                    else:
+                        neighborsOf[edge.node2] = [edge.node1]
+                if len(neighborsOf[src]) == 0 or len(neighborsOf[dst]) == 0: continue
+                p = self.topo.shortestPath(edges, src, dst, self.fStateMetric)
+                if not p[1]: continue
+                extraPaths.append((p[0], width, p[1]))
+                for i in range(1, width):
+                    for pair in p[1].edges():
+                        n1, n2 = pair[0], pair[1]
+                        for link in n1.links:
+                            if link.node1 == n1 and link.node2 == n2 and not link.assigned:
+                                link.assignQubits()
+                                break
+                picked = True
+
+    def P4(self):
+        start = time.time()
+        for triple in self.pathsSortedDinamically.extend(self.extraPaths):
+            _, width, p = triple[0], triple[1], triple[2]
+            oldNumOfPairs = len(self.topo.getEstablishedEntanglements(p[0], p[-1]))
+            tmp0 = list(zip(p[:-2], p[1:]))
+            tmp1 = tmp0[:-1]
+            tmp2 = list(zip(p[2:]))
+            for (n12, next) in tmp2:
+                prev, n = n12
+                prevLinks = sorted([link for link in n.links if link.entangled and not link.swappedAt(n) and
+                                    link.contains(prev)], key=lambda link: link.id)[:width]
+                nextLinks = sorted([link for link in n.links if link.entangled and not link.swappedAt(n) and
+                                    link.contains(next)], key=lambda link: link.id)[:width]
+
+                for (l1, l2) in zip(prevLinks, nextLinks):
+                    n.attemptSwapping(l1, l2)
+            succ = len(self.topo.getEstablishedEntanglements(p[0], p[-1])) - oldNumOfPairs
+            self.logWriter.write('\n'.join(node.id for node in p))
+            self.logWriter.write('{} {} // online'.format((width, succ)))
+        self.P4Adaptive()
+        self.logWriter.write('\n')
 
     def P4Adaptive(self):
         visited = set(list(filter(lambda x: x.swapped(), self.topo.links)))
