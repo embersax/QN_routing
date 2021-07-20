@@ -111,3 +111,14 @@ def removeUntil(T , f):
         if f(e):
             return e
     return None
+flat_map = lambda f, xs: (y for ys in xs for y in f(ys))
+
+
+def listtoString(s, seperator):
+    s = list(map(lambda x: str(x), s))
+    return seperator.join(s)
+
+def divide_chunks(l, n):
+    # looping till length l
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
