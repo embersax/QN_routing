@@ -1,5 +1,6 @@
 from configs import *
 from utils.utils import *
+import statistics
 class Plot:
     def __init__(self):
         self.chidren=[]
@@ -84,4 +85,27 @@ class Plot:
         }}
 """
             self.chidren.append(tmp_str)
+        def throughPutNsd():
+            d, n, p, q, k, nsd = referenceSetting
+            def f_Nsd_1(name):
+
+                return( list(map(  lambda nsd:
+                                 statistics.mean(list(map(lambda x : sum([ path.succ for path in x.majorPaths]) ,
+                                                       # rstlist
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") )  ,  topoRange))))                          ,
+
+                        nsdList)))
+            def f_Nsd_2(name):
+
+                return( list(map(  lambda nsd:
+                                 statistics.mean(list(map(lambda x : sum([ path.succ for path in x.majorPaths ]) ,
+                                                       # rstlist
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") )  ,  topoRange))))                          ,
+
+                        nsdList)))
+            result = list(map(lambda name: f_Nsd_1(name), names))
+            result2 = list(map(lambda name: f_Nsd_2(name), names))
+
+
+
 
