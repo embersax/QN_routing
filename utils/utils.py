@@ -139,3 +139,10 @@ def foldLeft(fun, arr, initial=None):
         acc = fun(acc, element)
 
     return acc
+
+
+def flatMap(xs, f=lambda x:x):
+    ys = []
+    for x in xs:
+        ys.extend(f(x))
+    return ys
