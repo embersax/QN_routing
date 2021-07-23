@@ -31,7 +31,7 @@ class GreedyGeographicRouting(metaclass=Algorithm):
                                                                len(list(filter(
                                                                    lambda x: (not x.assigned) and x.contains(neighbor),
                                                                    last.links))) > 0,
-                                              last.neighbors)), lambda it: length(it.loc - dst.loc))[0]
+                                              last.neighbors)),key= lambda it: length(it.loc - dst.loc))[0]
                     if (next == None) or next in p:
                         break
                     p += next

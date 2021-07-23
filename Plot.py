@@ -92,19 +92,31 @@ class Plot:
                 return( list(map(  lambda nsd:
                                  statistics.mean(list(map(lambda x : sum([ path.succ for path in x.majorPaths]) ,
                                                        # rstlist
-                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") )  ,  topoRange))))                          ,
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))                          ,
 
                         nsdList)))
             def f_Nsd_2(name):
 
                 return( list(map(  lambda nsd:
-                                 statistics.mean(list(map(lambda x : sum([ path.succ for path in x.majorPaths ]) ,
+                                 statistics.mean(list(map(lambda x : sum([ 1 for path in x.majorPaths  if path.succ>0]) ,
                                                        # rstlist
-                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") )  ,  topoRange))))                          ,
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))                          ,
 
                         nsdList)))
+
+            def f_Nsd_3(name):
+                return (list(map(lambda nsd:
+                                 statistics.mean(list(map(lambda x:      len( set ( list( map(lambda path: [path[0],path[-1]] ,[path for path in x.majorPaths if path.succ>0]))))  ,
+                                                          # rstlist
+                                                          list(flat_map(lambda topoIdx: parseLog(
+                                                              "dist" + id(n, topoIdx, q, k, p, d, nsd, name) + "txt"),
+                                                                        topoRange))))),
+
+                                 nsdList)))
+
             result = list(map(lambda name: f_Nsd_1(name), names))
             result2 = list(map(lambda name: f_Nsd_2(name), names))
+            result3 = list(map(lambda name: f_Nsd_3(name), names))
 
 
 
