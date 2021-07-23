@@ -92,17 +92,17 @@ class Plot:
                 return( list(map(  lambda nsd:
                                  statistics.mean(list(map(lambda x : sum([ path.succ for path in x.majorPaths]) ,
                                                        # rstlist
-                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))                          ,
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))
 
-                        nsdList)))
+                        ,nsdList)))
             def f_Nsd_2(name):
 
                 return( list(map(  lambda nsd:
                                  statistics.mean(list(map(lambda x : sum([ 1 for path in x.majorPaths  if path.succ>0]) ,
                                                        # rstlist
-                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))                          ,
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))
 
-                        nsdList)))
+                        ,nsdList)))
 
             def f_Nsd_3(name):
                 return (list(map(lambda nsd:
@@ -110,13 +110,45 @@ class Plot:
                                                           # rstlist
                                                           list(flat_map(lambda topoIdx: parseLog(
                                                               "dist" + id(n, topoIdx, q, k, p, d, nsd, name) + "txt"),
-                                                                        topoRange))))),
+                                                                        topoRange)))))
 
-                                 nsdList)))
+                                 ,nsdList)))
 
             result = list(map(lambda name: f_Nsd_1(name), names))
             result2 = list(map(lambda name: f_Nsd_2(name), names))
             result3 = list(map(lambda name: f_Nsd_3(name), names))
+            tmp_str1 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-cdf-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "# S-D pairs in one time slot",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {nsdList}
+                      "y": {result}
+                    }}
+            """
+            tmp_str2 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-cdf-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "# S-D pairs in one time slot",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {nsdList}
+                      "y": {result2}
+                    }}
+            """
+            tmp_str3 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-cdf-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "# S-D pairs in one time slot",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {nsdList}
+                      "y": {result3}
+                    }}
+            """
+            self.chidren.append([tmp_str1,tmp_str2,tmp_str3])
+
 
 
 
