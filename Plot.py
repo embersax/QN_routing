@@ -52,7 +52,7 @@ class Plot:
             return "rp-throughput-cdf-{}-{}-{}-{}-{}-nsd".format(d, n, p, q, k).replace('.', '')
 
         def getSolutionList4(names):
-            return list(map(lambda it: ' {} '.format(self.nameMapping[it]) if it in self.nameMapping else '  ', names))
+            return list(map(lambda it: ' {} '.format(self.nameMapping[it]) if it in self.nameMapping else it, names))
 
         def getX4(max4):
             return list(range(max4+1))
@@ -184,8 +184,6 @@ class Plot:
         string3 = temp3.substitute(getName3=getName3(d, n, p, q, k), getSolutionList3=getSolutionList3(nsdList),
                                    max3=max3, getX3=getX3(max3), getY3=getY3(result3, max3))
         self.children.append(string3)
-
-
         maxx, names, result = 0, ['Online', 'Online-R', 'CR', 'CR-R'], []
 
         for name in names:
@@ -210,9 +208,6 @@ class Plot:
           "markerSize": 0,
             "name": "${getName4}",
           "solutionList": ${getSolutionList4},
-          "legendColumn": 2,
-          "legendFontSize": 10,
-          "legendAutomaticallyReorder": False,
           "xTitle": "Throughput (eps)",
           "yTitle": "CDF",
           "xLimit": [0, ${max4}],
@@ -295,9 +290,6 @@ class Plot:
           "markerSize": 0,
           "name": "${getName1}",
           "solutionList": ${getSolutionList1},
-          "legendColumn": 2,
-          "legendFontSize": 10,
-          "legendAutomaticallyReorder": False,
           "xTitle": "Length of recovery path",
           "yTitle": "CDF",
           "xLimit": [0, ${max1}],
@@ -338,9 +330,6 @@ class Plot:
                   "markerSize": 0,
                   "name": "${getName2}",
                   "solutionList": ${getSolutionList2},
-                  "legendColumn": 2,
-                  "legendFontSize": 10,
-                  "legendAutomaticallyReorder": False,
                   "xTitle": "Width of recovery path",
                   "yTitle": "CDF",
                   "xLimit": [0, ${max2}],
@@ -380,9 +369,6 @@ class Plot:
           "markerSize": 0,
           "name": "${getName3}",
           "solutionList": ${getSolutionList3},
-          "legendColumn": 2,
-          "legendFontSize": 10,
-          "legendAutomaticallyReorder": False,
           "xTitle": "# recovery paths per major path",
           "yTitle": "CDF",
           "xLimit": [0, ${max3}],
@@ -396,7 +382,178 @@ class Plot:
         self.children.append(string3)
 
 
+    def rp2Nsd(self):
+
+        def getName1(d, n, p, q, k):
+            return "a2-rp-throughput-{}-{}-{}-{}-{}-nsd".format(d, n, p, q, k).replace('.', '')
+
+        def getSolutionList1(names):
+            return list(map(lambda it: ' {} '.format(self.nameMapping[it]) if it in self.nameMapping else it, names))
+
+        def getX1(nsdList):
+            return nsdList
+
+        def getY1(results1):
+            return results1
+
+        def getName2(d, n, p, q, k):
+            return "a2-rp-succ-pairs-{}-{}-{}-{}-{}-nsd".format(d, n, p, q, k).replace('.', '')
+
+        def getSolutionList2(names):
+            return list(map(lambda it: ' {} '.format(self.nameMapping[it]) if it in self.nameMapping else it, names))
+
+        def getX2(nsdList):
+            return nsdList
+
+        def getY2(results2):
+            return results2
+
+        d, n, p, q, k, nsd = referenceSetting
+        names  = ['Online', 'Online-R']
+
+        results1 = []
+        for name in names:
+            result = []
+            for nsd in sorted(nsdList):
+                rList = flatMap(topoRange, lambda topoIdx: parseLog('dist/' + id(n, topoIdx, q, k, p, d, nsd, name) + '.txt'))
+                res = list(map(lambda it: sum(it.majorPaths.succ), rList))
+                result.append(sum(res)/len(res))
+            results1.append(result)
+
+        temp1 = Template("""
+        {
+          "name": "${getName1}",
+          "solutionList": ${getSolutionList1},
+          "xTitle": "# S-D pairs in one time slot",
+          "yTitle": "Throughput (eps)",
+          "x": ${getX1},
+          "y": ${getY1}
+        }""")
+
+        string1 = temp1.substitute(getName1=getName1(d, n, p, q, k), getSolutionList1=getSolutionList1(nsdList), getX1=getX1(nsdList), getY1=getY1(results1))
+        self.children.append(string1)
+
+        results2 = []
+        for name in names:
+            result = []
+            for nsd in sorted(nsdList):
+                rList = flatMap(topoRange,
+                                lambda topoIdx: parseLog('dist/' + id(n, topoIdx, q, k, p, d, nsd, name) + '.txt'))
+                res = list(map(lambda it: len([i for i in it.majorPaths if i.succ > 0]), rList))
+                result.append(sum(res)/len(res))
+            results2.append(result)
+
+        temp2 = Template("""
+                {
+                  "name": "${getName2}",
+                  "solutionList": ${getSolutionList2},
+                  "xTitle": "# S-D pairs in one time slot",
+                  "yTitle": "Success S-D pairs",
+                  "x": ${getX2},
+                  "y": ${getY2}
+                }""")
+
+        string2 = temp2.substitute(getName2=getName2(d, n, p, q, k), getSolutionList2=getSolutionList2(nsdList),
+                                   getX2=getX2(nsdList), getY2=getY2(results2))
+        self.children.append(string2)
+
+
+    def rp2N(self):
+
+        def getName1(d, n, p, q, k):
+            return "a2-rp-throughput-{}-{}-{}-{}-{}-nsd".format(d, n, p, q, k).replace('.', '')
+
+        def getSolutionList1(names):
+            return list(map(lambda it: ' {} '.format(self.nameMapping[it]) if it in self.nameMapping else it, names))
+
+        def getX1(nList):
+            return nList
+
+        def getY1(results1):
+            return results1
+
+        def getTicksAndLabels1(nList):
+            return [sorted(nList), list(map(lambda it: ' {} '.format(it), sorted(nList)))]
+
+        def getName2(d, n, p, q, k):
+            return "a2-rp-succ-pairs-{}-{}-{}-{}-{}-nsd".format(d, n, p, q, k).replace('.', '')
+
+        def getSolutionList2(names):
+            return list(map(lambda it: ' {} '.format(self.nameMapping[it]) if it in self.nameMapping else it, names))
+
+        def getX2(nList):
+            return nList
+
+        def getY2(results2):
+            return results2
+
+        def getTicksAndLabels2(nList):
+            return getTicksAndLabels1(nList)
+
+        d, n, p, q, k, nsd = referenceSetting
+        names = ['Online', 'Online-R']
+
+        results1 = []
+        for name in names:
+            result = []
+            for nsd in sorted(nsdList):
+                rList = flatMap(topoRange,
+                                lambda topoIdx: parseLog('dist/' + id(n, topoIdx, q, k, p, d, nsd, name) + '.txt'))
+                res = list(map(lambda it: sum(it.majorPaths.succ), rList))
+                result.append(sum(res) / len(res))
+            results1.append(result)
+
+        temp1 = Template("""
+        {
+          "markerSize": 0,
+          "name": "${getName1}",
+          "solutionList": ${getSolutionList1},
+          "xTitle": "|V|",
+          "xLog" : true,
+          "xTicks&Labels": {getTicksAndLabels1},
+          "yTitle": "Throughput (eps)",
+          "x": ${getX1},
+          "y": ${getY1}
+        }""")
+
+        string1 = temp1.substitute(getName1=getName1(d, n, p, q, k), getSolutionList1=getSolutionList1(nsdList),
+                                   getTicksAndLabels1=getTicksAndLabels1(nList), getX1=getX1(nList), getY1=getY1(results1))
+        self.children.append(string1)
+
+        results2 = []
+        for name in names:
+            result = []
+            for nsd in sorted(nsdList):
+                rList = flatMap(topoRange,
+                                lambda topoIdx: parseLog('dist/' + id(n, topoIdx, q, k, p, d, nsd, name) + '.txt'))
+                res = list(map(lambda it: len([i for i in it.majorPaths if i.succ > 0]), rList))
+                result.append(sum(res) / len(res))
+            results2.append(result)
+
+        temp2 = Template("""
+                {
+                  "markerSize": 0,
+                  "name": "${getName2}",
+                  "solutionList": ${getSolutionList2},
+                  "xTitle": "|V|",
+                  "xLog" : true,
+                  "xTicks&Labels": {getTicksAndLabels2},
+                  "yTitle": "Success S-D pairs",
+                  "x": ${getX2},
+                  "y": ${getY2}
+                }""")
+
+        string2 = temp2.substitute(getName2=getName2(d, n, p, q, k), getSolutionList2=getSolutionList2(nList),
+                                   getTicksAndLabels2=getTicksAndLabels2(nList), getX2=getX2(nList), getY2=getY2(results2))
+        self.children.append(string2)
+
+
+
 
 if __name__ == '__main__':
-    plot = Plot()
-    plot.rp2Cdf_nsd()
+    p = Plot()
+
+    p.rp2Cdf_nsd()
+    p.rp2Cdf_n()
+    p.rp2N()
+    p.rp2Nsd()
