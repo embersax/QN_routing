@@ -148,6 +148,331 @@ class Plot:
                     }}
             """
             self.chidren.append([tmp_str1,tmp_str2,tmp_str3])
+        def throughPutD():
+            d, n, p, q, k, nsd = referenceSetting
+            def f_D_1(name):
+
+                return( list(map(  lambda nsd:
+                                 statistics.mean(list(map(lambda x : sum([ path.succ for path in x.majorPaths]) ,
+                                                       # rstlist
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))
+
+                        ,dList)))
+            def f_D_2(name):
+
+                return( list(map(  lambda nsd:
+                                 statistics.mean(list(map(lambda x : sum([ 1 for path in x.majorPaths  if path.succ>0]) ,
+                                                       # rstlist
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))
+
+                        ,dList)))
+
+            def f_D_3(name):
+                return (list(map(lambda nsd:
+                                 statistics.mean(list(map(lambda x:      len( set ( list( map(lambda path: [path[0],path[-1]] ,[path for path in x.majorPaths if path.succ>0]))))  ,
+                                                          # rstlist
+                                                          list(flat_map(lambda topoIdx: parseLog(
+                                                              "dist" + id(n, topoIdx, q, k, p, d, nsd, name) + "txt"),
+                                                                        topoRange)))))
+
+                                 ,dList)))
+
+            result = list(map(lambda name: f_D_1(name), names))
+            result2 = list(map(lambda name: f_D_2(name), names))
+            result3 = list(map(lambda name: f_D_3(name), names))
+            tmp_str1 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {dList}
+                      "y": {result}
+                    }}
+            """
+            tmp_str2 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {dList}
+                      "y": {result2}
+                    }}
+            """
+            tmp_str3 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {dList}
+                      "y": {result3}
+                    }}
+            """
+            self.chidren.append([tmp_str1,tmp_str2,tmp_str3])
+
+        def throughPutP():
+            d, n, p, q, k, nsd = referenceSetting
+
+            def f_P_1(name):
+                return (list(map(lambda nsd:
+                                 statistics.mean(list(map(lambda x: sum([path.succ for path in x.majorPaths]),
+                                                          # rstlist
+                                                          list(flat_map(lambda topoIdx: parseLog(
+                                                              "dist" + id(n, topoIdx, q, k, p, d, nsd,
+                                                                          name) + "txt"), topoRange)))))
+
+                                 , pList)))
+
+            def f_P_2(name):
+                return (list(map(lambda nsd:
+                                 statistics.mean(
+                                     list(map(lambda x: sum([1 for path in x.majorPaths if path.succ > 0]),
+                                              # rstlist
+                                              list(flat_map(lambda topoIdx: parseLog(
+                                                  "dist" + id(n, topoIdx, q, k, p, d, nsd, name) + "txt"),
+                                                            topoRange)))))
+
+                                 , pList)))
+
+            def f_P_3(name):
+                return (list(map(lambda nsd:
+                                 statistics.mean(list(map(lambda x: len(set(list(
+                                     map(lambda path: [path[0], path[-1]],
+                                         [path for path in x.majorPaths if path.succ > 0])))),
+                                                          # rstlist
+                                                          list(flat_map(lambda topoIdx: parseLog(
+                                                              "dist" + id(n, topoIdx, q, k, p, d, nsd,
+                                                                          name) + "txt"),
+                                                                        topoRange)))))
+
+                                 , pList)))
+
+            result = list(map(lambda name: f_P_1(name), names))
+            result2 = list(map(lambda name: f_P_2(name), names))
+            result3 = list(map(lambda name: f_P_3(name), names))
+            tmp_str1 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {pList}
+                      "y": {result}
+                    }}
+            """
+            tmp_str2 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {pList}
+                      "y": {result2}
+                    }}
+            """
+            tmp_str3 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {pList}
+                      "y": {result3}
+                    }}
+            """
+            self.chidren.append([tmp_str1, tmp_str2, tmp_str3])
+        def throughPutN():
+            d, n, p, q, k, nsd = referenceSetting
+            def f_N_1(name):
+
+                return( list(map(  lambda nsd:
+                                 statistics.mean(list(map(lambda x : sum([ path.succ for path in x.majorPaths]) ,
+                                                       # rstlist
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))
+
+                        ,nList)))
+            def f_N_2(name):
+
+                return( list(map(  lambda nsd:
+                                 statistics.mean(list(map(lambda x : sum([ 1 for path in x.majorPaths  if path.succ>0]) ,
+                                                       # rstlist
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))
+
+                        ,nList)))
+
+            def f_N_3(name):
+                return (list(map(lambda nsd:
+                                 statistics.mean(list(map(lambda x:      len( set ( list( map(lambda path: [path[0],path[-1]] ,[path for path in x.majorPaths if path.succ>0]))))  ,
+                                                          # rstlist
+                                                          list(flat_map(lambda topoIdx: parseLog(
+                                                              "dist" + id(n, topoIdx, q, k, p, d, nsd, name) + "txt"),
+                                                                        topoRange)))))
+
+                                 ,nList)))
+
+            result = list(map(lambda name: f_N_1(name), names))
+            result2 = list(map(lambda name: f_N_2(name), names))
+            result3 = list(map(lambda name: f_N_3(name), names))
+            tmp_str1 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {nList}
+                      "y": {result}
+                    }}
+            """
+            tmp_str2 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {nList}
+                      "y": {result2}
+                    }}
+            """
+            tmp_str3 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {nList}
+                      "y": {result3}
+                    }}
+            """
+            self.chidren.append([tmp_str1,tmp_str2,tmp_str3])
+
+        def throughPutQ():
+            d, n, p, q, k, nsd = referenceSetting
+            def f_Q_1(name):
+
+                return( list(map(  lambda nsd:
+                                 statistics.mean(list(map(lambda x : sum([ path.succ for path in x.majorPaths]) ,
+                                                       # rstlist
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))
+
+                        ,qList)))
+            def f_Q_2(name):
+
+                return( list(map(  lambda nsd:
+                                 statistics.mean(list(map(lambda x : sum([ 1 for path in x.majorPaths  if path.succ>0]) ,
+                                                       # rstlist
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))
+
+                        ,qList)))
+
+            def f_Q_3(name):
+                return (list(map(lambda nsd:
+                                 statistics.mean(list(map(lambda x:      len( set ( list( map(lambda path: [path[0],path[-1]] ,[path for path in x.majorPaths if path.succ>0]))))  ,
+                                                          # rstlist
+                                                          list(flat_map(lambda topoIdx: parseLog(
+                                                              "dist" + id(n, topoIdx, q, k, p, d, nsd, name) + "txt"),
+                                                                        topoRange)))))
+
+                                 ,qList)))
+
+            result = list(map(lambda name: f_Q_1(name), names))
+            result2 = list(map(lambda name: f_Q_2(name), names))
+            result3 = list(map(lambda name: f_Q_3(name), names))
+            tmp_str1 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {qList}
+                      "y": {result}
+                    }}
+            """
+            tmp_str2 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {qList}
+                      "y": {result2}
+                    }}
+            """
+            tmp_str3 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {qList}
+                      "y": {result3}
+                    }}
+            """
+            self.chidren.append([tmp_str1,tmp_str2,tmp_str3])
+        def throughPutK():
+            d, n, p, q, k, nsd = referenceSetting
+            def f_K_1(name):
+
+                return( list(map(  lambda nsd:
+                                 statistics.mean(list(map(lambda x : sum([ path.succ for path in x.majorPaths]) ,
+                                                       # rstlist
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))
+
+                        ,kList)))
+            def f_K_2(name):
+
+                return( list(map(  lambda nsd:
+                                 statistics.mean(list(map(lambda x : sum([ 1 for path in x.majorPaths  if path.succ>0]) ,
+                                                       # rstlist
+                                                       list( flat_map( lambda topoIdx : parseLog("dist"+id(n, topoIdx, q, k, p, d, nsd, name)+"txt") ,  topoRange)  ))))
+
+                        ,kList)))
+
+            def f_K_3(name):
+                return (list(map(lambda nsd:
+                                 statistics.mean(list(map(lambda x:      len( set ( list( map(lambda path: [path[0],path[-1]] ,[path for path in x.majorPaths if path.succ>0]))))  ,
+                                                          # rstlist
+                                                          list(flat_map(lambda topoIdx: parseLog(
+                                                              "dist" + id(n, topoIdx, q, k, p, d, nsd, name) + "txt"),
+                                                                        topoRange)))))
+
+                                 ,kList)))
+
+            result = list(map(lambda name: f_K_1(name), names))
+            result2 = list(map(lambda name: f_K_2(name), names))
+            result3 = list(map(lambda name: f_K_3(name), names))
+            tmp_str1 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {kList}
+                      "y": {result}
+                    }}
+            """
+            tmp_str2 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {kList}
+                      "y": {result2}
+                    }}
+            """
+            tmp_str3 = f"""
+                    {{
+                      "name":  {listtoString(["throughput-d-", f"{d}-", f"{n}-", f"{p}", f"{q}-", f"{k}-", f"{nsd}"], "").replace(".", "")}
+                      "solutionList": {listtoString(list(map(lambda name: f"{nameMapping[name]}", names)))}
+                      "xTitle": "Average node degree",
+                      "yTitle": "Throughput (eps)",,
+                      "x": {kList}
+                      "y": {result3}
+                    }}
+            """
+            self.chidren.append([tmp_str1,tmp_str2,tmp_str3])
 
 
 
