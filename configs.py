@@ -6,7 +6,8 @@ import random
 import re
 import os
 
-random.seed(19900111)
+randGenSeed = 19900111
+random.seed(randGenSeed)
 
 edgeLen = 100.0
 maxSearchHops = 15
