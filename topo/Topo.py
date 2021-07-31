@@ -62,7 +62,8 @@ class Topo:
         self.alpha = float(lines.pop(0))
         self.q = float(lines.pop(0))
         self.k = int(lines.pop(0))
-        self.internalLength = math.log(1 / self.q) / self.alpha
+        # In kotlin, div by zero apparently is totally fine. So, changed the internalLength computation by a bit.
+        self.internalLength = math.log(1 / self.q) / self.alpha if self.alpha != 0 else float('inf')
 
         for i in range(n):
             line = lines.pop(0)

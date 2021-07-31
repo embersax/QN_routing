@@ -24,7 +24,7 @@ def simpleTest():
             lines = list(netTopology.split('\n'))
             lines[1] = str(alpha)
             topo = Topo('\n'.join(lines))
-            avgP = float(sum(list(map(lambda it: exp(-alpha + length([it.node1.loc, it.node2.loc])), topo.links)))) / len(topo.links)
+            avgP = float(sum(list(map(lambda it: exp(-alpha * length([it.node1.loc, it.node2.loc])), topo.links)))) / len(topo.links)
 
             if abs(avgP - expectedAvgP) / expectedAvgP < .001:  break
 
@@ -46,12 +46,12 @@ def simpleTest():
         res = []
         for i in range(1, repeat+1):
             shuffle(combs)
-            res.append(list(map(lambda it: (it[0].id, it[1].id), combs[nsd])))
+            res.append(list(map(lambda it: (it[0].id, it[1].id), combs[:nsd])))
         return res
 
     testSetIter, testSet = [i for i in range(1, 11)], []
     for nsd in testSetIter:
-        combs = list(combinations(netTopology.nodes, 2))
+        combs = list(combinations(topo.nodes, 2))
         testSet.append(funInLine135(combs, nsd, repeat))
 
     children = []
