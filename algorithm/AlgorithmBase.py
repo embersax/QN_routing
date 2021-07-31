@@ -1,7 +1,7 @@
 """This class represents the base for the implementation of a quantum routing algorithm """
 # You can check this link to study abstract class implementation in Python.
 # https://stackoverflow.com/questions/7196376/python-abstractmethod-decorator
-from ..topo import Topo
+from QN_routing.topo import Topo
 import abc
 
 
