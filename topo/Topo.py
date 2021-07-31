@@ -225,25 +225,25 @@ class Topo:
         nl = "\n"
         tmp_dict = self.grouby_dict(self.links, lambda x: x.n1.to(x.n2))
         return f"""
-                {self.n}
-                {self.alpha}
-                {self.q}
-                {self.k}
-                {self.listtoString(list(map(lambda node: str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
-                {self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])), tmp_dict)), nl)}
-                """
+{self.n}
+{self.alpha}
+{self.q}
+{self.k}
+{self.listtoString(list(map(lambda node: str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
+{self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])), tmp_dict)), nl)}
+"""
 
     def toFullString(self):
         nl = "\n"
         tmp_dict = self.grouby_dict(self.links, lambda x: x.n1.to(x.n2))
         return f"""
-                {self.n}
-                {self.alpha}
-                {self.q}
-                {self.k}
-                {self.listtoString(list(map(lambda node: str(node.remainingQubits) + "/" + str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
-                {self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])) + str(len(tmp_dict[x])), tmp_dict)), nl)}
-                """
+{self.n}
+{self.alpha}
+{self.q}
+{self.k}
+{self.listtoString(list(map(lambda node: str(node.remainingQubits) + "/" + str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
+{self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])) + str(len(tmp_dict[x])), tmp_dict)), nl)}
+"""
 
     def widthPhase2(self, path):
         tmp1 = min(list(map(lambda x: x.remainingQubits / 2, path[1:-1])))
@@ -487,8 +487,9 @@ class Topo:
     def linksBetween(self, node1, node2):
         return list(filter(lambda link: node2 == link.node1 or node2 == link.node2, [link for link in node1.links]))
 
+
     @staticmethod
-    def generate(n, q, k, a, degree):
+    def generateString(n, q, k, a, degree):
         alpha = a
 
         ## Shoqian didn't explicitly create it in Topo.kt but it was assigned the value 100 in configs.kt
@@ -560,7 +561,8 @@ class Topo:
         for key in tmp_dict:
             if len(tmp_dict[key]) / 2 < 5:
                 # not sure if takes the right index, needed to double check
-                nearest = sorted([i for i in range(0, n)], key=lambda x: length(list_minus(nodeLocs[x], nodeLocs[key])))[
+                nearest = sorted([i for i in range(0, n)],
+                                 key=lambda x: length(list_minus(nodeLocs[x], nodeLocs[key])))[
                           1:int(6 - len(tmp_dict[key]) / 2)]
 
                 tmp_list = list(map(lambda x: [sorted([x, key])[0], sorted([x, key])[1]],
@@ -577,8 +579,7 @@ class Topo:
                      links))
             , nl)
 
-
-        return Topo(f"""{n}
+        return f"""{n}
 {alpha}
 {q}
 {k}
@@ -586,7 +587,13 @@ class Topo:
 {tmp_string2}
 """
 
-                )
+
+
+    @staticmethod
+    def generate(n, q, k, a, degree):
+        topoStr = Topo.generateString(n, q, k, a, degree)
+
+        return Topo(topoStr)
 
 ### I added Vamsi's updated code
 
@@ -594,5 +601,5 @@ class Topo:
 ## Adding this part to run some basic tests on the generate() method.
 
 if __name__ == "__main__":
-    generate(50, .9, 5, .1, 6)
+    Topo.generate(50, .9, 5, .1, 6)
 
