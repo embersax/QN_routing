@@ -99,7 +99,7 @@ def parseLog(fn):
                 if line.startswith('-----'): continue
                 if line.strip() == '' or not line.strip(): continue
                 try:
-                    indent = len(list(takewhile(lambda x: x is ' ', line)))
+                    indent = len(list(takewhile(lambda x: x == ' ', line)))
                     if indent == 0:
                         currMajorPath = None
                         if currRecord is not None:
