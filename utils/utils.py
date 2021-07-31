@@ -146,3 +146,7 @@ def flatMap(xs, f=lambda x:x):
     for x in xs:
         ys.extend(f(x))
     return ys
+
+def listtoString(s, seperator):
+    s = list(map(lambda x: str(x), s))
+    return seperator.join(s)
