@@ -3,11 +3,11 @@ import hashlib
 import sys
 import re
 from itertools import combinations, groupby
-from topo.Node import Node, Edge
-from topo.Link import Link
-from utils.Disjoinset import Disjointset
-from utils.utils import *
-from utils.CollectionUtils import PriorityQueue
+from QN_routing.topo.Node import Node, Edge
+from QN_routing.topo.Link import Link
+from QN_routing.utils.Disjoinset import Disjointset
+from QN_routing.utils.utils import *
+from QN_routing.utils.CollectionUtils import PriorityQueue
 import random
 
 hopLimit = 15

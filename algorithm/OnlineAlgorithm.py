@@ -1,9 +1,9 @@
 from .AlgorithmBase import Algorithm
-from topo.Topo import Topo, Path
-from topo.Node import to
+from QN_routing.topo.Topo import Topo, Path
+from QN_routing.topo.Node import to
 import numpy as np
 import heapq
-from utils.utils import ReducibleLazyEvaluation
+from QN_routing.utils.utils import ReducibleLazyEvaluation
 import abc
 from dataclasses import dataclass
 from functools import reduce
