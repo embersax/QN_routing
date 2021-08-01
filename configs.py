@@ -6,7 +6,8 @@ import random
 import re
 import os
 
-random.seed(19900111)
+randGenSeed = 19900111
+random.seed(randGenSeed)
 
 edgeLen = 100.0
 maxSearchHops = 15
@@ -42,7 +43,9 @@ referenceSetting = (dList[0], nList[0], pList[0], qList[0], kList[0], nsdList[-1
 
 # """$n#$topoIdx-$q-$k-$p-$d-$numPairs-${name}"""
 def id(n, topoIdx, q, k, p, d, numPairs, name): return "{}#{}-{}-{}-{}-{}-{}-{}".format(
-    (n, topoIdx, q, k, p, d, numPairs, name))
+    n, topoIdx, q, k, p, d, numPairs, name)
+
+
 
 
 # TODO: reducible lazy evaluation part. Not sure how to do it with only two params. Will do it with a dict meanwhile.
@@ -98,7 +101,7 @@ def parseLog(fn):
                 if line.startswith('-----'): continue
                 if line.strip() == '' or not line.strip(): continue
                 try:
-                    indent = len(list(takewhile(lambda x: x is ' ', line)))
+                    indent = len(list(takewhile(lambda x: x == ' ', line)))
                     if indent == 0:
                         currMajorPath = None
                         if currRecord is not None:

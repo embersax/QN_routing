@@ -1,4 +1,4 @@
-from .AlgorithmBase import Algorithm
+from QN_routing.algorithm.AlgorithmBase import Algorithm
 from QN_routing.topo.Topo import Topo, Path
 from QN_routing.topo.Node import to
 import numpy as np

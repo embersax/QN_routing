@@ -62,7 +62,8 @@ class Topo:
         self.alpha = float(lines.pop(0))
         self.q = float(lines.pop(0))
         self.k = int(lines.pop(0))
-        self.internalLength = math.log(1 / self.q) / self.alpha
+        # In kotlin, div by zero apparently is totally fine. So, changed the internalLength computation by a bit.
+        self.internalLength = math.log(1 / self.q) / self.alpha if self.alpha != 0 else float('inf')
 
         for i in range(n):
             line = lines.pop(0)
@@ -225,25 +226,25 @@ class Topo:
         nl = "\n"
         tmp_dict = self.grouby_dict(self.links, lambda x: x.n1.to(x.n2))
         return f"""
-                {self.n}
-                {self.alpha}
-                {self.q}
-                {self.k}
-                {self.listtoString(list(map(lambda node: str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
-                {self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])), tmp_dict)), nl)}
-                """
+{self.n}
+{self.alpha}
+{self.q}
+{self.k}
+{self.listtoString(list(map(lambda node: str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
+{self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])), tmp_dict)), nl)}
+"""
 
     def toFullString(self):
         nl = "\n"
         tmp_dict = self.grouby_dict(self.links, lambda x: x.n1.to(x.n2))
         return f"""
-                {self.n}
-                {self.alpha}
-                {self.q}
-                {self.k}
-                {self.listtoString(list(map(lambda node: str(node.remainingQubits) + "/" + str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
-                {self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])) + str(len(tmp_dict[x])), tmp_dict)), nl)}
-                """
+{self.n}
+{self.alpha}
+{self.q}
+{self.k}
+{self.listtoString(list(map(lambda node: str(node.remainingQubits) + "/" + str(node.nQubits) + self.listtoString(node.loc, " "), self.nodes)), nl)}
+{self.listtoString(list(map(lambda x: str(x.n1.id) + str(len(tmp_dict[x])) + str(len(tmp_dict[x])), tmp_dict)), nl)}
+"""
 
     def widthPhase2(self, path):
         tmp1 = min(list(map(lambda x: x.remainingQubits / 2, path[1:-1])))
@@ -488,97 +489,98 @@ class Topo:
         return list(filter(lambda link: node2 == link.node1 or node2 == link.node2, [link for link in node1.links]))
 
 
-def generate(n, q, k, a, degree):
-    alpha = a
+    @staticmethod
+    def generateString(n, q, k, a, degree):
+        alpha = a
 
-    ## Shoqian didn't explicitly create it in Topo.kt but it was assigned the value 100 in configs.kt
-    ## Manually assigning the value. But, at a later point in time, have to move this to configs.py file
-    edgeLen = 100.0
-    controllingD = math.sqrt(edgeLen * edgeLen / n)
-    links = []
-    # #Added nodeLocs
-    nodeLocs = []
-    while len(nodeLocs) < n:
-        ## element is a list but x is not. The '-' operator is not defined. Please recheck this part.
-        # "+" operator matches the unaryPlus operator of Shouqian's code of Double Array
-        element = [random.uniform(0, 1) * 100 for _ in range(2)]
-        if all(length(list_minus(x, element)) > controllingD / 1.2 for x in nodeLocs):
-            nodeLocs.append(element)
-    nodeLocs = sorted(nodeLocs, key=lambda x: x[0] + int(x[1] * 10 / edgeLen) * 1000000)
+        ## Shoqian didn't explicitly create it in Topo.kt but it was assigned the value 100 in configs.kt
+        ## Manually assigning the value. But, at a later point in time, have to move this to configs.py file
+        edgeLen = 100.0
+        controllingD = math.sqrt(edgeLen * edgeLen / n)
+        links = []
+        # #Added nodeLocs
+        nodeLocs = []
+        while len(nodeLocs) < n:
+            ## element is a list but x is not. The '-' operator is not defined. Please recheck this part.
+            # "+" operator matches the unaryPlus operator of Shouqian's code of Double Array
+            element = [random.uniform(0, 1) * 100 for _ in range(2)]
+            if all(length(list_minus(x, element)) > controllingD / 1.2 for x in nodeLocs):
+                nodeLocs.append(element)
+        nodeLocs = sorted(nodeLocs, key=lambda x: x[0] + int(x[1] * 10 / edgeLen) * 1000000)
 
-    def argument_function(beta):
-        links.clear()
-        ## An efficient algorithm is already available in itertools. Replacing with combinations() call
-        tmp_list = list(combinations([i for i in range(0, n)], 2))
-        for i in range(len(tmp_list)):
-            (l1, l2) = list(map(lambda x: nodeLocs[x], [tmp_list[i][0], tmp_list[i][1]]))
-            d = length(list_minus(l2, l1))
-            if d < 2 * controllingD:
-                l = min([random.uniform(0, 1) for i in range(1, 51)])
-                r = math.exp(-beta * d)
-                if l < r:
-                    # to functions needed to be implemented
-                    links.append([tmp_list[i][0], tmp_list[i][1]])
-        tmp1 = len(links)
+        def argument_function(beta):
+            links.clear()
+            ## An efficient algorithm is already available in itertools. Replacing with combinations() call
+            tmp_list = list(combinations([i for i in range(0, n)], 2))
+            for i in range(len(tmp_list)):
+                (l1, l2) = list(map(lambda x: nodeLocs[x], [tmp_list[i][0], tmp_list[i][1]]))
+                d = length(list_minus(l2, l1))
+                if d < 2 * controllingD:
+                    l = min([random.uniform(0, 1) for i in range(1, 51)])
+                    r = math.exp(-beta * d)
+                    if l < r:
+                        # to functions needed to be implemented
+                        links.append([tmp_list[i][0], tmp_list[i][1]])
+            tmp1 = len(links)
 
-        return 2 * float(len(links)) / n
+            return 2 * float(len(links)) / n
 
-    # Can't fully debug unless the dynSearch and disjointSet are actually implemented
-    # dynSearch needed to be implememnted,I just realized beta is not used Shouqian's code
-    beta = dynSearch(0.0, 20.0, float(degree), argument_function, False, 0.2)
-    # DisjoinSet needed to be implemmented
-    disjoinSet = Disjointset(n)
-    for i in range(len(links)):
-        disjoinSet.merge(links[i][0], links[i][1])
-    # compute  ccs: =(o unitil n).map.map.groupby.map.sorted
-    ### finish debugging before this part
-    t1 = list(map(lambda x: [x, disjoinSet.getRepresentative(x)], [i for i in range(0, n)]))
-    # from shouqian's code it seems that t1 and t2 have the same transformation and t2 is basically same as t1, I'm not sure
-    t2 = list(map(lambda x: [x[0], x[1]], t1))
-    # [x,disjoinSet.getgetRepresentative(x)]
-    t3 = groupby_dict(t2, lambda x: x[1])
-    t4 = list(map(lambda x: list(map(lambda x: x[0], t3[x])), t3))
-    ccs = sorted(t4, key=lambda x: -len(x))
+        # Can't fully debug unless the dynSearch and disjointSet are actually implemented
+        # dynSearch needed to be implememnted,I just realized beta is not used Shouqian's code
+        beta = dynSearch(0.0, 20.0, float(degree), argument_function, False, 0.2)
+        # DisjoinSet needed to be implemmented
+        disjoinSet = Disjointset(n)
+        for i in range(len(links)):
+            disjoinSet.merge(links[i][0], links[i][1])
+        # compute  ccs: =(o unitil n).map.map.groupby.map.sorted
+        ### finish debugging before this part
+        t1 = list(map(lambda x: [x, disjoinSet.getRepresentative(x)], [i for i in range(0, n)]))
+        # from shouqian's code it seems that t1 and t2 have the same transformation and t2 is basically same as t1, I'm not sure
+        t2 = list(map(lambda x: [x[0], x[1]], t1))
+        # [x,disjoinSet.getgetRepresentative(x)]
+        t3 = groupby_dict(t2, lambda x: x[1])
+        t4 = list(map(lambda x: list(map(lambda x: x[0], t3[x])), t3))
+        ccs = sorted(t4, key=lambda x: -len(x))
 
-    biggest = ccs[0]
-    for i in range(1, len(ccs)):
-        # this part I'm not sure since shuffle changes the order of original ccs list
-        ## ccs1 is not defined. Please check
-        tmp1 = random.shuffle(ccs[i])[0:3]
-        for j in range(len(tmp1)):
-            nearest = sorted(biggest, key=lambda x: sum(nodeLocs[x] - nodeLocs[tmp1[j]]))[0]
-            tmp2 = sorted([nearest, tmp1[j]])
-            links.append(Edge(tmp2[0], tmp2[1]))
+        biggest = ccs[0]
+        for i in range(1, len(ccs)):
+            # this part I'm not sure since shuffle changes the order of original ccs list
+            ## ccs1 is not defined. Please check
+            tmp1 = random.shuffle(ccs[i])[0:3]
+            for j in range(len(tmp1)):
+                nearest = sorted(biggest, key=lambda x: sum(nodeLocs[x] - nodeLocs[tmp1[j]]))[0]
+                tmp2 = sorted([nearest, tmp1[j]])
+                links.append(Edge(tmp2[0], tmp2[1]))
 
-    ## groupby_dict, listtoString are functions Topo class objects. They seem to be used outside the class. So, making them static in this case.
-    flat_map = lambda f, xs: (y for ys in xs for y in f(ys))
-    #     retrive the flatten list first
-    tmp_list = list(flat_map(lambda x: [x[0], x[1]], links))
-    # retriev dictionary to iterate
-    tmp_dict = groupby_dict_(tmp_list, lambda x: x)
+        ## groupby_dict, listtoString are functions Topo class objects. They seem to be used outside the class. So, making them static in this case.
+        flat_map = lambda f, xs: (y for ys in xs for y in f(ys))
+        #     retrive the flatten list first
+        tmp_list = list(flat_map(lambda x: [x[0], x[1]], links))
+        # retriev dictionary to iterate
+        tmp_dict = groupby_dict_(tmp_list, lambda x: x)
 
-    for key in tmp_dict:
-        if len(tmp_dict[key]) / 2 < 5:
-            # not sure if takes the right index, needed to double check
-            nearest = sorted([i for i in range(0, n)], key=lambda x: length(list_minus(nodeLocs[x], nodeLocs[key])))[
-                      1:int(6 - len(tmp_dict[key]) / 2)]
+        for key in tmp_dict:
+            if len(tmp_dict[key]) / 2 < 5:
+                # not sure if takes the right index, needed to double check
+                nearest = sorted([i for i in range(0, n)],
+                                 key=lambda x: length(list_minus(nodeLocs[x], nodeLocs[key])))[
+                          1:int(6 - len(tmp_dict[key]) / 2)]
 
-            tmp_list = list(map(lambda x: [sorted([x, key])[0], sorted([x, key])[1]],
-                                nearest))
-            # need to check what is added to links here
-            for item in tmp_list:
-                links.append(item)
+                tmp_list = list(map(lambda x: [sorted([x, key])[0], sorted([x, key])[1]],
+                                    nearest))
+                # need to check what is added to links here
+                for item in tmp_list:
+                    links.append(item)
 
-    nl = "\n"
-    tmp_string1 = Topo.listtoString(
-        list(map(lambda x: f"{int(random.uniform(0, 1) * 5 + 10)} " + Topo.listtoString(x, " "), nodeLocs)), nl)
-    tmp_string2 = Topo.listtoString(
-        list(map(lambda x: f"{x[0]} " + f"{x[1]} " + f"{int(random.uniform(0, 1) * 5 + 3)}",
-                 links))
-        , nl)
+        nl = "\n"
+        tmp_string1 = Topo.listtoString(
+            list(map(lambda x: f"{int(random.uniform(0, 1) * 5 + 10)} " + Topo.listtoString(x, " "), nodeLocs)), nl)
+        tmp_string2 = Topo.listtoString(
+            list(map(lambda x: f"{x[0]} " + f"{x[1]} " + f"{int(random.uniform(0, 1) * 5 + 3)}",
+                     links))
+            , nl)
 
-
-    return Topo(f"""{n}
+        return f"""{n}
 {alpha}
 {q}
 {k}
@@ -586,7 +588,13 @@ def generate(n, q, k, a, degree):
 {tmp_string2}
 """
 
-                )
+
+
+    @staticmethod
+    def generate(n, q, k, a, degree):
+        topoStr = Topo.generateString(n, q, k, a, degree)
+
+        return Topo(topoStr)
 
 ### I added Vamsi's updated code
 
@@ -594,5 +602,5 @@ def generate(n, q, k, a, degree):
 ## Adding this part to run some basic tests on the generate() method.
 
 if __name__ == "__main__":
-    generate(50, .9, 5, .1, 6)
+    Topo.generate(50, .9, 5, .1, 6)
 
