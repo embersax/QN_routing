@@ -150,3 +150,14 @@ def flatMap(xs, f=lambda x:x):
 def listtoString(s, seperator):
     s = list(map(lambda x: str(x), s))
     return seperator.join(s)
+
+def divide_chunks(l, n):
+    # looping till length l
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+def flat_map(xs, f=lambda x:x):
+    ys = []
+    for x in xs:
+        ys.extend(f(x))
+    return ys
