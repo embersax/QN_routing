@@ -1060,20 +1060,37 @@ class Plot:
                         result[pair[0]] = [np.mean(float(x) for x in pair[1])]
                     else:
                         result[pair[0]].append(np.mean(float(x) for x in pair[1]))
-            # TODO: Check out this par
+            # TODO: Check out this part
             for i in range(maxi + 1):
                 channels[i] = result[i]
-            # TODO: Fix the String
-            self.children.append("""
-        {
-          "name": "${"channels-throughput-$d-$n-$p-$q-$k-$nsd${if (mode == 1) "" else if (mode == 2) "-noA1" else "-rp"}".replace(".", "")}",
-          "solutionList": ${names.map { """ "${nameMapping[it] ?: it}" """ }},
-          "xTitle": "Throughput (eps)",
-          "yTitle": "# occupied channels",
-          "x": ${(0..max).toList()},
-          "xTicks&Labels": ${(0..max).chunked(5).map { it.first() }},
-          "y": ${channels.map { l -> if (l.size < max + 1) l + List(max + 1 - l.size, { Double.NaN }) else l }}
-        } """.strip())
+            nameString = "channels-throughput-{}-{}-{}-{}-{}-{}{}".format((d, n, p, q, k, nsd,
+                                                                                            "" if mode == 1 else "-noA1"
+                                                                                            if mode == 2 else "-rp")).replace(".", "")
+            # TODO: Can we separate them with commas?
+            solutionList = []
+            for name in names:
+                if self.nameMapping[name] is not None: solutionList.append(self.nameMapping[name])
+                else: solutionList.append(name)
+            solutionListString = ','.join(solutionList)
+            x = [i for i in range(maxi+1)]
+            # This part takes the first element of each sublist of 5 positions and makes a list out of it
+            xTicksAndLabels = '.'.join([sublist[0] for sublist in [x[i:i + 5] for i in range(0, len(x), 5)]])
+            provY = []
+            for l in channels:
+                if len(l) < maxi + 1: provY.append(l + [None]*int(maxi + 1 - len(l)) )
+                else: provY.append(l)
+            y = ','.join(provY)
+            self.chidren.append(
+                f"""
+                "name": {nameString},
+                "solutionList": {solutionListString},
+                "xTitle": "Throughput (eps)",
+                "yTitle": "# occupied channels",
+                "x": {x},
+                "xTicks&Labels": {xTicksAndLabels},
+                "y": {provY}
+                """
+            )
 
     def fairness(self):
         d, n, p, q, k, nsd = referenceSetting
@@ -1112,17 +1129,36 @@ class Plot:
                     sum_[i] = s
             for it in range(0, maxi+1):
                 result[it] = sum[it]/float(s)
-        self.children.append("""
+        markerSize = "markerSize: 0"
+        name = "mp-cdf-{}-{}-{}-{}-{}-{}".format((d, n, p, q, k, nsd)).replace(".", "")
+        # TODO: Can we separate them with commas?
+        solutionList = []
+        for name in names:
+            if self.nameMapping[name] is not None:
+                solutionList.append(self.nameMapping[name])
+            else:
+                solutionList.append(name)
+        solutionListString = ','.join(solutionList)
+        x = [i for i in range(maxi + 1)]
+        provY = []
+        for l in channels:
+            if len(l) < maxi + 1:
+                provY.append(l + [None] * int(maxi + 1 - len(l)))
+            else:
+                provY.append(l)
+        y = ','.join(provY)
+
+        self.chidren.append(f"""
         {
           "markerSize": 0,
-          "name": "${"mp-cdf-$d-$n-$p-$q-$k-$nsd".replace(".", "")}",
-          "solutionList": ${names.map { """ "${nameMapping[it] ?: it}" """ }},
+          "name": {name},
+          "solutionList": {solutionListString},
           "xTitle": "Total width of allocated major paths",
           "yTitle": "CDF",
-          "xLimit": [0, $max],
+          "xLimit": [0, {str(maxi)}],
           "yLimit": [0, 1],
-          "x": ${(0..max).toList()},
-          "y": ${result.map { l -> if (l.size < max + 1) l + List(max + 1 - l.size, { 1.0 }) else l }}
+          "x": {x},
+          "y": {provY}
         }""".strip())
 
     def recovery1(self):
@@ -1156,21 +1192,31 @@ class Plot:
                         avg = np.mean(len([float(majorPath.succ) for majorPath in record.majorPaths if float(majorPath.succ) > 0]))
                         provList.append(avg)
                     results2.append(provList)
-            self.children.append(["""
-          {
-            "name": "${"a1-rp-throughput-$d-$n-$p-$q-$k-nsd".replace(".", "")}",
-            "solutionList": ${names.map { """ "${nameMapping[it] ?: it}" """ }},
+
+            nameString1 = "a1-rp-throughput-{}-{}-{}-{}-{}-nsd".format((d, n, p, q, k)).replace(".", "")
+            nameString2 = "a1-rp-succ-pairs-{}-{}-{}-{}-{}-nsd".format((d, n, p, q, k)).replace(".", "")
+            solutionList = []
+            for name in names:
+                if self.nameMapping[name] is not None:
+                    solutionList.append(self.nameMapping[name])
+                else:
+                    solutionList.append(name)
+            solutionListString = ','.join(solutionList)
+
+            self.chidren.append([f"""{
+            "name": {nameString1},
+            "solutionList": {solutionList},
             "xTitle": "# S-D pairs in one time slot",
             "yTitle": "Throughput (eps)",
-            "x": $nsdList,
+            "x": {configs.nsdList},
             "y": ${results}
-          }""".strip(), """
+          }""".strip(), f"""
           {
-            "name": "${"a1-rp-succ-pairs-$d-$n-$p-$q-$k-nsd".replace(".", "")}",
-            "solutionList": ${names.map { """ "${nameMapping[it] ?: it}" """ }},
+            "name": {nameString2}",
+            "solutionList": {solutionListString},
             "xTitle": "# S-D pairs in one time slot",
             "yTitle": "# succ S-D pairs",
-            "x": $nsdList,
+            "x": {configs.nsdList},
             "y": ${results2}
           }""".strip()])
 
